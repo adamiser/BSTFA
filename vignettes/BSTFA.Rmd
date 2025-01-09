@@ -5,6 +5,8 @@ vignette: >
   %\VignetteIndexEntry{BSTFA}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+abstract:
+  "The BSTFA package for R is a tool for fitting fully Bayesian spatiotemporal factor analysis models under a multivariate normal likelihood. The package implements a computationally rapid approach using dimension reduction via Fourier and thin plate spline bases. The package also supports a non-reduced model with much slower computation. Also included are functions to predict and plot the response variable at missing/unknown locations, methods to visualize processes (such as a linear slope through time) on a grid or map, and a function to plot an estimated curve through some given timeframe (such as annually)."
 ---
 
 ```{r, include = FALSE}
@@ -15,5 +17,103 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
+devtools::load_all()
 # library(BSTFA)
+
 ```
+
+### Testing
+
+```{r}
+my_mvrnorm(1,1)
+
+# load('/Users/adamiser/Desktop/Research/TempDataForSTFA.Rdata')
+# 
+# Cmoonmean <- locdat.T
+# for(i in 1:n.locations){
+#   Cmoonmean[,i] <- locdat.T[,i] - mean(locdat.T[,i], na.rm=T)
+# }
+# Cmoonmean.T <- Cmoonmean
+# missing <- which(is.na(Cmoonmean)==T)
+# Cmoonmean <- as.matrix(Cmoonmean)
+# y <- c(Cmoonmean)
+# doy = as.numeric(x_set)
+# ymat = Cmoonmean
+# coords = rbind(gauges.reg[,c(2,3)])
+# 
+# ymat.use = ymat[200:1450,]
+# mydate.use = mydate[200:1450]
+# 
+# utahDataList = list('TemperatureVals' = ymat.use,
+#                     'Dates' = mydate.use,
+#                     'Coords' = coords)
+# 
+# usethis::use_data(utahDataList,overwrite=TRUE)
+
+devtools::load_all()
+out = STFA(iters=1000,ymat=utahDataList$TemperatureVals,
+           dates=utahDataList$Dates,
+           coords=utahDataList$Coords,
+           factors.fixed = c(144,89,129,78), n.seasn.knots=7,
+           spatial.style='fourier', load.style='fourier', plot.factors = FALSE,
+           n.spatial.bases = 8, n.load.bases = 8,
+           freq.lat = 40, freq.lon = 30)
+computation.summary(out)
+check.convergence(out)
+
+plot.location(out,location=10)
+
+plot.grid(out,parameter='slope')
+plot.grid(out,parameter='loadings',loading=1)
+plot.grid(out,parameter='loadings',loading=2)
+plot.grid(out,parameter='loadings',loading=3)
+plot.grid(out,parameter='loadings',loading=4)
+
+plot.factor(out, together=TRUE)
+
+plot.trace(out, parameter='beta', param.range=1:5)
+
+plot.annual(out,location=10)
+
+devtools::load_all()
+plot.map(out,parameter='slope',location='utah',state=TRUE,map=TRUE,
+         with.uncertainty = FALSE)
+
+predictSTFA(out,location=10)
+predictSTFA(out,location=10,type='ub') - predictSTFA(out,location=10,type='lb') 
+predictSTFA(out,location=data.frame('Longitude' = -111.96, 'Latitude' = 41.06))
+plot.location(out,location=10,truth=TRUE)
+plot.location(out,location=data.frame('Longitude' = -111.96, 'Latitude' = 41.06))
+```
+
+# Intended Audience
+
+This document is intended to help even the most novice statistics student implement a fully Bayesian approach on spatially and temporally correlated data. Every function within the package is designed with this audience in mind. This document is meant to guide any potential user of this package through the basic theory and implementation of our models: in essence, it is an instruction manual. The bulk of this document contains examples of our functions applied with both generated and real data. 
+
+The outline is as follows. Section 1 introduces the motivation behind our Bayesian spatiotemporal factor analysis models and why fast computation is important. Section 2 outlines the available functions and procedures within the BSTFA package. Some basic theory and methodology are contained in Section 3, and Section 4 demonstrates the BSTFA package on simulated and real world data. The appendix details additional resources.
+
+# 1. Motivation 
+
+# 2. What is Implemented?
+
+## BSTFA
+## BSTFAfull
+## Prediction
+## Plotting/Visualization
+## Speed
+
+# 3. Methods
+
+# 4. Examples using BSTFA
+## Simulated Data 1
+## Simulated Data 2
+## Utah
+
+# Appendices
+
+## References
+## Additional Notes
+
+
+
+
