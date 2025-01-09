@@ -51,7 +51,7 @@ my_mvrnorm(1,1)
 # usethis::use_data(utahDataList,overwrite=TRUE)
 
 devtools::load_all()
-out = STFA(iters=1000,ymat=utahDataList$TemperatureVals,
+out = STFA(iters=100,ymat=utahDataList$TemperatureVals,
            dates=utahDataList$Dates,
            coords=utahDataList$Coords,
            factors.fixed = c(144,89,129,78), n.seasn.knots=7,
