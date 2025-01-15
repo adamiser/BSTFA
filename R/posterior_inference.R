@@ -4,6 +4,7 @@
 
 #' Prediction
 #' @param out output from STFA or STFAfull
+#' @importFrom npreg basis.tps
 #' @export predictSTFA
 predictSTFA = function(out, location=NULL, type='mean',
                        ci.level = c(0.025, 0.975), new_x=NULL) {
@@ -44,8 +45,8 @@ predictSTFA = function(out, location=NULL, type='mean',
     if (out$spatial.style=='grid') {
       # predS=makePredS(out,location)
       predS <- NULL
-      for(kk in 1:length(out$knots)) {
-        bspred <- bisquare2d(as.matrix(location), as.matrix(out$knots[[kk]]))
+      for(kk in 1:length(out$knots.spatial)) {
+        bspred <- bisquare2d(as.matrix(location), as.matrix(out$knots.spatial[[kk]]))
         predS <- cbind(predS, bspred)
       }
     }
@@ -67,7 +68,7 @@ predictSTFA = function(out, location=NULL, type='mean',
     }
     if (out$spatial.style == 'tps') {
       coords_added = rbind(out$coords,location)
-      predS = basis.tps(coords_added, knots=out$knots, rk=TRUE)[-(1:nrow(out$coords)),-(1:2)]
+      predS = matrix(npreg::basis.tps(coords_added, knots=out$knots.spatial, rk=TRUE)[-(1:nrow(out$coords)),-(1:2)],ncol=out$n.spatial.bases)
     }
 
     if (!is.null(new_x)) {
@@ -89,35 +90,33 @@ predictSTFA = function(out, location=NULL, type='mean',
     xilong = kronecker(Matrix::Diagonal(nrow(location)),
                        out$model.matrices$seasonal.bs.basis)%*%xipred
 
-    if (out$load.style == out$spatial.style) predQS = predS # FIX ME Assumes n.load.bases = n.load.spatial
-    else {
-      if (out$load.style == 'grid') {
-        predQS <- NULL
-        for(kk in 1:length(out$knots)) {
-          bspred <- bisquare2d(as.matrix(location), as.matrix(out$knots[[kk]]))
-          predQS <- cbind(predS, bspred)
-        }
-      }
-      if (out$load.style == 'fourier') {
-        m.fft.lon <- sapply(1:(out$n.load.bases/2), function(k) {
-          sin_term <- sin(2 * pi * k * (location[,1])/out$freq.lon)
-          cos_term <- cos(2 * pi * k * (location[,1])/out$freq.lon)
-          cbind(sin_term, cos_term)
-        })
-        m.fft.lat <- sapply(1:(out$n.load.bases/2), function(k) {
-          sin_term <- sin(2 * pi * k * (location[,2])/out$freq.lat)
-          cos_term <- cos(2 * pi * k * (location[,2])/out$freq.lat)
-          cbind(sin_term, cos_term)
-        })
-        Slon <- cbind(m.fft.lon[1:nrow(location),], m.fft.lon[(nrow(location)+1):(2*nrow(location)),])
-        Slat <- cbind(m.fft.lat[1:nrow(location),], m.fft.lat[(nrow(location)+1):(2*nrow(location)),])
-        predQS = matrix(Slat*Slon,ncol=out$n.load.bases)
-      }
-      if (out$load.style == 'tps') {
-        coords_added = rbind(out$coords,location)
-        predQS = basis.tps(coords_added, knots=out$knots, rk=TRUE)[-(1:nrow(out$coords)),-(1:2)]
+    if (out$load.style == 'grid') {
+      predQS <- NULL
+      for(kk in 1:length(out$knots.load)) {
+        bspred <- bisquare2d(as.matrix(location), as.matrix(out$knots.load[[kk]]))
+        predQS <- cbind(predS, bspred)
       }
     }
+    if (out$load.style == 'fourier') {
+      m.fft.lon <- sapply(1:(out$n.load.bases/2), function(k) {
+        sin_term <- sin(2 * pi * k * (location[,1])/out$freq.lon)
+        cos_term <- cos(2 * pi * k * (location[,1])/out$freq.lon)
+        cbind(sin_term, cos_term)
+      })
+      m.fft.lat <- sapply(1:(out$n.load.bases/2), function(k) {
+        sin_term <- sin(2 * pi * k * (location[,2])/out$freq.lat)
+        cos_term <- cos(2 * pi * k * (location[,2])/out$freq.lat)
+        cbind(sin_term, cos_term)
+      })
+      Slon <- cbind(m.fft.lon[1:nrow(location),], m.fft.lon[(nrow(location)+1):(2*nrow(location)),])
+      Slat <- cbind(m.fft.lat[1:nrow(location),], m.fft.lat[(nrow(location)+1):(2*nrow(location)),])
+      predQS = matrix(Slat*Slon,ncol=out$n.load.bases)
+    }
+    if (out$load.style == 'tps') {
+      coords_added = rbind(out$coords,location)
+      predQS = matrix(npreg::basis.tps(coords_added, knots=out$knots.load, rk=TRUE)[-(1:nrow(out$coords)),-(1:2)],ncol=out$n.load.bases)
+    }
+
     Lam = array(dim=c(nrow(predQS),out$n.factors,out$draws))
     for (i in 1:out$draws) {
       Lam[,,i] = predQS%*%matrix(out$alphaS[i,],nrow=out$n.load.bases,ncol=out$n.factors,byrow=TRUE)
@@ -214,8 +213,10 @@ plot.location = function(out, location, new_x=NULL,
 #' Plot on a grid
 #' @param out output from STFA or STFAfull
 #' @import ggplot2
+#' @importFrom RColorBrewer brewer.pal
 #' @export plot.grid
-plot.grid = function(out, parameter, loadings=1, type='mean', ci.level=c(0.025, 0.975)) {
+plot.grid = function(out, parameter, loadings=1, type='mean', ci.level=c(0.025, 0.975),
+                     color.gradient=colorRampPalette(rev(RColorBrewer::brewer.pal(9, name='RdBu')))(50)) {
 
   if (parameter=='slope') {
     if (type=='mean') vals = apply(out$beta,2,mean)
@@ -233,6 +234,8 @@ plot.grid = function(out, parameter, loadings=1, type='mean', ci.level=c(0.025, 
     if (type=='lb') vals = matrix(apply(out$Lambda,2,quantile,prob=ci.level[1]),nrow=out$n.locs,ncol=out$n.factors,byrow=TRUE)
     if (type=='ub') vals = matrix(apply(out$Lambda,2,quantile,prob=ci.level[2]),nrow=out$n.locs,ncol=out$n.factors,byrow=TRUE)
   }
+  max_value = max(abs(min(vals)),abs(max(vals)))
+  min_value = -max_value
 
   if (parameter == 'slope' | parameter == 'mean') {
     print(ggplot(mapping=aes(x=out$coords[,1], y=out$coords[,2],
@@ -241,7 +244,9 @@ plot.grid = function(out, parameter, loadings=1, type='mean', ci.level=c(0.025, 
             ggtitle(ifelse(parameter=='slope', "Slope", "Mean")) +
             xlab('Longitude') +
             ylab('Latitude') +
-            labs(color = ifelse(parameter=='slope', "Slope", "Mean")))
+            labs(color = ifelse(parameter=='slope', "Slope", "Mean")) +
+      scale_colour_gradientn(colors=color.gradient,
+                             name='Slope', limits = c(min_value, max_value)))
   }
   if (parameter == 'loadings') {
     for (i in loadings) {
@@ -251,7 +256,9 @@ plot.grid = function(out, parameter, loadings=1, type='mean', ci.level=c(0.025, 
               ylab('Latitude') +
               geom_point(aes(x=out$coords[out$factors.fixed[i],1]),
                          y=out$coords[out$factors.fixed[i],2], color="red", size=4) +
-              ggtitle(paste("Loading ", i, ", Fixed Location ", out$factors.fixed[i], sep="")))
+              ggtitle(paste("Loading ", i, ", Fixed Location ", out$factors.fixed[i], sep="")) +
+        scale_colour_gradientn(colors=color.gradient,
+                               name=paste('Loading',loadings), limits = c(min_value, max_value)))
     }
   }
 }
@@ -264,10 +271,11 @@ plot.grid = function(out, parameter, loadings=1, type='mean', ci.level=c(0.025, 
 #' @importFrom sf st_polygon
 #' @importFrom sf st_point
 #' @importFrom ggpubr ggarrange
+#' @importFrom RColorBrewer brewer.pal
 #' @export plot.map
 plot.map = function(out, parameter='slope', yearscale=TRUE, new_x=NULL,
                     type='mean', ci.level=c(0.025, 0.975), fine=100,
-                    color.gradient=colorRampPalette(rev(brewer.pal(9, name='RdBu')))(fine),
+                    color.gradient=colorRampPalette(rev(RColorBrewer::brewer.pal(9, name='RdBu')))(fine),
                     with.uncertainty=FALSE, map=FALSE, state=FALSE, location=NULL,
                     loading=1) {
 
@@ -322,8 +330,8 @@ plot.map = function(out, parameter='slope', yearscale=TRUE, new_x=NULL,
   if (parameter=='loading') {
     if (out$load.style=='grid') {
       predS <- NULL
-      for(kk in 1:length(out$knots)) {
-        bspred <- bisquare2d(as.matrix(predloc), as.matrix(out$knots[[kk]]))
+      for(kk in 1:length(out$knots.load)) {
+        bspred <- bisquare2d(as.matrix(predloc), as.matrix(out$knots.load[[kk]]))
         predS <- cbind(predS, bspred)
       }
     }
@@ -352,15 +360,15 @@ plot.map = function(out, parameter='slope', yearscale=TRUE, new_x=NULL,
       # predS = cbind(m.fft[1:nrow(predloc),], m.fft[(nrow(predloc)+1):(2*nrow(predloc)),])
     }
     if (out$load.style=='tps') {
-      predS = npreg::basis.tps(predloc,knots=out$knots,rk=TRUE)[,-(1:2)]
+      predS = npreg::basis.tps(predloc,knots=out$knots.load,rk=TRUE)[,-(1:2)]
     }
 
   }
   else {
     if (out$spatial.style=='grid') {
       predS <- NULL
-      for(kk in 1:length(out$knots)) {
-        bspred <- bisquare2d(as.matrix(predloc), as.matrix(out$knots[[kk]]))
+      for(kk in 1:length(out$knots.spatial)) {
+        bspred <- bisquare2d(as.matrix(predloc), as.matrix(out$knots.spatial[[kk]]))
         predS <- cbind(predS, bspred)
       }
     }
@@ -389,7 +397,7 @@ plot.map = function(out, parameter='slope', yearscale=TRUE, new_x=NULL,
       # predS = cbind(m.fft[1:nrow(predloc),], m.fft[(nrow(predloc)+1):(2*nrow(predloc)),])
     }
     if (out$spatial.style=='tps') {
-      predS = npreg::basis.tps(predloc,knots=out$knots,rk=TRUE)[,-(1:2)]
+      predS = npreg::basis.tps(predloc,knots=out$knots.spatial,rk=TRUE)[,-(1:2)]
     }
   }
 
@@ -444,14 +452,14 @@ plot.map = function(out, parameter='slope', yearscale=TRUE, new_x=NULL,
     plot.title = paste0((ci.level[2] - ci.level[1])*100, "% Upper Bound")
   }
   if (!with.uncertainty) {
-    min_value <- min(predloc$predm)
-    max_value <- max(predloc$predm)
+    max_value = max(abs(min(predloc$predm)),abs(max(predloc$predm)))
+    min_value = -max_value
   }
   if (with.uncertainty) {
     predloc$predl <- apply(pred, 1, quantile, prob=ci.level[1])
     predloc$predu <- apply(pred, 1, quantile, prob=ci.level[2])
-    min_value <- min(predloc$predl)
-    max_value <- max(predloc$predu)
+    max_value = max(abs(min(predloc$predl)),abs(max(predloc$predl)), abs(min(predloc$predu)),abs(max(predloc$predu)))
+    min_value = -max_value
   }
 
   if (!map) {
@@ -605,23 +613,24 @@ plot.factor = function(out, factor=1, together=FALSE, include.legend=TRUE,
 #' @export plot.annual
 plot.annual <- function(out, location, add=F,
                         years="one",
-                        interval=0.95, yrange=NULL){
+                        interval=0.95, yrange=NULL,
+                        new_x=NULL){
 
   y = out$y
   x_set = out$doy
   if(years=="all"){
-    dates.pred <- seq(as.Date("1979-01-01"), as.Date("2008-12-31"), by=1)
+    dates.pred <- seq(as.Date(out$dates[1]), as.Date(out$dates[length(out$dates)]), by=1)
     doy.pred <- as.numeric(strftime(dates.pred, format="%j"))
   }else{
-    dates.pred <- seq(as.Date("2001-01-01"), as.Date("2001-12-31"), by=1)
+    dates.pred <- seq(as.Date("2001-01-01"), as.Date("2001-12-31"), by=1) # 2001 doesn't matter; just gets correct doy
     doy.pred <- as.numeric(strftime(dates.pred, format="%j"))
-    months.plot <- seq(as.Date("2001-01-01"), as.Date("2001-12-31"), by="month")
+    months.plot <- seq(as.Date("2001-01-01"), as.Date("2001-12-31"), by="month") # 2001 doesn't matter; just gets correct month
     at.doy.plot <- as.numeric(strftime(months.plot, format="%j"))
     months.plot <- months(months.plot, abbreviate=T)
   }
 
   knots <- seq(1, 366, length=out$n.seasn.knots+1)
-  bs.basis <- cSplineDes(doy.pred, knots)
+  bs.basis <- mgcv::cSplineDes(doy.pred, knots)
 
   if(length(location)==1){
     loc.seq <- ((location-1)*out$n.seasn.knots + 1):(location*out$n.seasn.knots)
@@ -657,7 +666,6 @@ plot.annual <- function(out, location, add=F,
         axis(1, at=at.doy.plot, labels=months.plot)
       }
       if(interval>0){
-
         if(years=="all"){
           polygon(c(dates.pred, rev(dates.pred)), c(ann.pred.bounds[1,], rev(ann.pred.bounds[2,])), col=rgb(.5, .5, .5, .4), border=NA)
           lines(dates.pred, ann.pred.mean, lwd=1.5)
@@ -669,7 +677,7 @@ plot.annual <- function(out, location, add=F,
 
       if(length(y)>0){
         if(years=="all"){
-          dates.data <- as.Date(names(x_set))
+          dates.data <- as.Date(out$dates)
           points(dates.data, y.this, col=rgb(.5, .5, .5, .25))
         }else{
           points(x_set, y.this, col=rgb(.5, .5, .5,.25))
@@ -678,6 +686,70 @@ plot.annual <- function(out, location, add=F,
     }
   } else { # New location
 
-  }
+    if (out$spatial.style=='grid') {
+      # predS=makePredS(out,location)
+      predS <- NULL
+      for(kk in 1:length(out$knots.spatial)) {
+        bspred <- bisquare2d(as.matrix(location), as.matrix(out$knots.spatial[[kk]]))
+        predS <- cbind(predS, bspred)
+      }
+    }
 
+    if (out$spatial.style == 'fourier') {
+      m.fft.lon <- sapply(1:(out$n.spatial.bases/2), function(k) {
+        sin_term <- sin(2 * pi * k * (location[,1])/out$freq.lon)
+        cos_term <- cos(2 * pi * k * (location[,1])/out$freq.lon)
+        cbind(sin_term, cos_term)
+      })
+      m.fft.lat <- sapply(1:(out$n.spatial.bases/2), function(k) {
+        sin_term <- sin(2 * pi * k * (location[,2])/out$freq.lat)
+        cos_term <- cos(2 * pi * k * (location[,2])/out$freq.lat)
+        cbind(sin_term, cos_term)
+      })
+      Slon <- cbind(m.fft.lon[1:nrow(location),], m.fft.lon[(nrow(location)+1):(2*nrow(location)),])
+      Slat <- cbind(m.fft.lat[1:nrow(location),], m.fft.lat[(nrow(location)+1):(2*nrow(location)),])
+      predS = matrix(Slat*Slon,ncol=out$n.spatial.bases)
+    }
+    if (out$spatial.style == 'tps') {
+      coords_added = rbind(out$coords,location)
+      predS = matrix(npreg::basis.tps(coords_added, knots=out$knots.spatial, rk=TRUE)[-(1:nrow(out$coords)),-(1:2)],ncol=out$n.spatial.bases)
+    }
+
+    if (!is.null(new_x)) {
+      predS <- cbind(predS, new_x)
+      predloc <- predloc[complete.cases(predS),]
+      predS <- predS[complete.cases(predS),]
+    }
+
+    predS.xi = as(kronecker(predS, diag(out$n.seasn.knots)), "sparseMatrix")
+    xi.pred <- predS.xi%*%t(out$alpha.xi)
+    ann.pred <- bs.basis%*%xi.pred
+    ann.pred.mean <- apply(ann.pred, 1, mean)
+    if(interval>0){
+      ann.pred.bounds <- apply(ann.pred, 1, quantile, probs=c((1-interval)/2, (1+interval)/2))
+    }else{
+      ann.pred.bounds <- NULL
+    }
+
+    if(is.null(yrange)==T){
+      ylims <- range(c(ann.pred.mean, ann.pred.bounds), na.rm=T)
+    }else{
+      ylims <- yrange
+    }
+    if(years=="all"){
+      plot(dates.pred, ann.pred.mean, lwd=1.5, type='l', xlab="Date", ylab="Annual Seasonal Cycle", ylim=ylims, main=paste("Location", location[1], location[2]))
+    }else{
+      plot(doy.pred, ann.pred.mean, lwd=1.5, type='l', xaxt="n", xlab="Date", ylab="Annual Seasonal Cycle", ylim=ylims)
+      axis(1, at=at.doy.plot, labels=months.plot)
+    }
+    if(interval>0){
+      if(years=="all"){
+        polygon(c(dates.pred, rev(dates.pred)), c(ann.pred.bounds[1,], rev(ann.pred.bounds[2,])), col=rgb(.5, .5, .5, .4), border=NA)
+        lines(dates.pred, ann.pred.mean, lwd=1.5)
+      }else{
+        polygon(c(doy.pred, rev(doy.pred)), c(ann.pred.bounds[1,], rev(ann.pred.bounds[2,])), col=rgb(.5, .5, .5, .4), border=NA)
+        lines(doy.pred, ann.pred.mean, lwd=1.5)
+      }
+    }
+  }
 }

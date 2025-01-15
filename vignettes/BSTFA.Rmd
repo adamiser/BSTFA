@@ -6,7 +6,7 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 abstract:
-  "The BSTFA package for R is a tool for fitting fully Bayesian spatiotemporal factor analysis models under a multivariate normal likelihood. The package implements a computationally rapid approach using dimension reduction via Fourier and thin plate spline bases. The package also supports a non-reduced model with much slower computation. Also included are functions to predict and plot the response variable at missing/unknown locations, methods to visualize processes (such as a linear slope through time) on a grid or map, and a function to plot an estimated curve through some given timeframe (such as annually)."
+  "The BSTFA package for R is a tool for fitting fully Bayesian spatiotemporal factor analysis models under a multivariate normal likelihood. The package implements a computationally rapid approach using dimension reduction via basis functions. The package also supports a non-reduced spatiotemporal factor analysis model with much slower computation. Also included are functions to predict and plot the response variable at missing/unknown locations, methods to visualize processes (such as the linear trend through time) on a grid or map, and a function to plot an estimated curve through some given timeframe (such as annually)."
 ---
 
 ```{r, include = FALSE}
@@ -27,28 +27,29 @@ devtools::load_all()
 ```{r}
 my_mvrnorm(1,1)
 
-# load('/Users/adamiser/Desktop/Research/TempDataForSTFA.Rdata')
-# 
-# Cmoonmean <- locdat.T
-# for(i in 1:n.locations){
-#   Cmoonmean[,i] <- locdat.T[,i] - mean(locdat.T[,i], na.rm=T)
-# }
-# Cmoonmean.T <- Cmoonmean
-# missing <- which(is.na(Cmoonmean)==T)
-# Cmoonmean <- as.matrix(Cmoonmean)
-# y <- c(Cmoonmean)
-# doy = as.numeric(x_set)
-# ymat = Cmoonmean
-# coords = rbind(gauges.reg[,c(2,3)])
-# 
-# ymat.use = ymat[200:1450,]
-# mydate.use = mydate[200:1450]
-# 
-# utahDataList = list('TemperatureVals' = ymat.use,
-#                     'Dates' = mydate.use,
-#                     'Coords' = coords)
-# 
-# usethis::use_data(utahDataList,overwrite=TRUE)
+load('/Users/adamiser/Desktop/Research/TempDataForSTFA.Rdata')
+
+Cmoonmean <- locdat.T
+for(i in 1:n.locations){
+  Cmoonmean[,i] <- locdat.T[,i] - mean(locdat.T[,i], na.rm=T)
+}
+Cmoonmean.T <- Cmoonmean
+missing <- which(is.na(Cmoonmean)==T)
+Cmoonmean <- as.matrix(Cmoonmean)
+y <- c(Cmoonmean)
+doy = as.numeric(x_set)
+ymat = Cmoonmean
+coords = rbind(gauges.reg[,c(2,3)])
+
+ymat.use = ymat[200:1450,]
+mydate.use = mydate[200:1450]
+
+utahDataList = list('TemperatureVals' = ymat.use,
+                    'Dates' = mydate.use,
+                    'Coords' = coords,
+                    'Locations' = gauges.reg$Station)
+
+usethis::use_data(utahDataList,overwrite=TRUE)
 
 devtools::load_all()
 out = STFA(iters=100,ymat=utahDataList$TemperatureVals,
@@ -79,20 +80,63 @@ devtools::load_all()
 plot.map(out,parameter='slope',location='utah',state=TRUE,map=TRUE,
          with.uncertainty = FALSE)
 
-predictSTFA(out,location=10)
+preds = predictSTFA(out,location=10,type='all')
+preds.mean = predictSTFA(out,location=10,type='mean')
 predictSTFA(out,location=10,type='ub') - predictSTFA(out,location=10,type='lb') 
 predictSTFA(out,location=data.frame('Longitude' = -111.96, 'Latitude' = 41.06))
 plot.location(out,location=10,truth=TRUE)
 plot.location(out,location=data.frame('Longitude' = -111.96, 'Latitude' = 41.06))
 ```
 
+### Function fixing
+
+```{r}
+devtools::load_all()
+
+out = STFA(iters=100,ymat=utahDataList$TemperatureVals,
+           dates=utahDataList$Dates,
+           coords=utahDataList$Coords,
+           factors.fixed = c(144,89,129,78), n.seasn.knots=7,
+           spatial.style='fourier', load.style='fourier',
+           n.load.bases = 8, n.spatial.bases = 12, n.temp.bases=126,
+           verbose=FALSE, plot.factors=FALSE)
+dim(out$alphaS)
+out$n.spatial.bases
+
+par(mfrow=c(1,1))
+plot.location(out,1,xrange=c('1959-01-01', '1979-01-01'))
+devtools::load_all()
+plot.location(out, location=data.frame('Longitude' = -111.96, 'Latitude' = 41.06),
+         uncertainty=TRUE, xrange=c('1959-01-01', '1979-01-01'))
+
+plot.grid(out,parameter='loadings',loadings=1)
+plot.grid(out,parameter='slope')
+
+plot.map(out,parameter='slope',location='utah',state=TRUE,map=TRUE,
+         with.uncertainty = FALSE)
+plot.map(out,parameter='loading',location='utah',state=TRUE,map=TRUE,
+         with.uncertainty = FALSE, loading=1)
+plot.map(out,parameter='loading',location='utah',state=TRUE,map=TRUE,
+         with.uncertainty = FALSE, loading=2)
+
+plot.factor(out, factor=4, together=TRUE)
+
+devtools::load_all()
+plot.annual(out,location=1,interval=0.99,years='all')
+plot.annual(out,location=1,interval=0.95,years='one')
+plot.annual(out,location=data.frame('Longitude' = -111.96, 'Latitude' = 41.06),years='one',add=T)
+
+```
+
+
+
 # Intended Audience
 
-This document is intended to help even the most novice statistics student implement a fully Bayesian approach on spatially and temporally correlated data. Every function within the package is designed with this audience in mind. This document is meant to guide any potential user of this package through the basic theory and implementation of our models: in essence, it is an instruction manual. The bulk of this document contains examples of our functions applied with both generated and real data. 
+This document is intended to help even the most novice statistics student implement a fully Bayesian approach on spatially and temporally correlated data. Every function within the package is designed with this audience in mind. This document is meant to guide any potential user of this package through the basic theory and implementation of our models: in essence, it is an instruction manual. The bulk of this document contains examples of our functions applied on a real dataset.
 
 The outline is as follows. Section 1 introduces the motivation behind our Bayesian spatiotemporal factor analysis models and why fast computation is important. Section 2 outlines the available functions and procedures within the BSTFA package. Some basic theory and methodology are contained in Section 3, and Section 4 demonstrates the BSTFA package on simulated and real world data. The appendix details additional resources.
 
-# 1. Motivation 
+# 1. Motivation
 
 # 2. What is Implemented?
 
@@ -102,11 +146,9 @@ The outline is as follows. Section 1 introduces the motivation behind our Bayesi
 ## Plotting/Visualization
 ## Speed
 
-# 3. Methods
+# 3. Methodology
 
 # 4. Examples using BSTFA
-## Simulated Data 1
-## Simulated Data 2
 ## Utah
 
 # Appendices

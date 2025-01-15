@@ -12,7 +12,8 @@
   type = "mean",
   ci.level = c(0.025, 0.975),
   fine = 100,
-  color.gradient = colorRampPalette(rev(brewer.pal(9, name = "RdBu")))(fine),
+  color.gradient = colorRampPalette(rev(RColorBrewer::brewer.pal(9, name =
+    "RdBu")))(fine),
   with.uncertainty = FALSE,
   map = FALSE,
   state = FALSE,

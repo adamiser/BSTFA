@@ -1,26 +1,34 @@
 ### FIX ME ###
-# Limits on loading plots - always put 0 in middle?
-# plot.knots = FALSE not working
-# STFAfull - omega.bar.cur not working. Maybe adapt.iter needs to be > burn?
-# plot.location not working (non-conformable arguments)
-# Assume n.load.bases = n.spatial.bases in predictSTFA function. Fix this?
-# Need to allow for different numbers of grid bases in load.style and spatial.style
-# ERROR with tps in spatial.style
-
-### TO DO ###
+### Model function STFA
 # Implement ... argument into function
 # Check default values for everything, comment on differences
-# implement tps fully (STFAfull)
 # Look closer at eSS checking during the function
-# plot.annual - how to do "all" years?
-# New coordinates to plot.annual?
-# limits on with.uncertainty plots - coloring is now dull
+# Make n.load.bases and n.spatial.bases arguments make more sense for all basis styles
+# How do covariates work?
+
+### Model function specifically STFAfull
+# STFAfull - omega.bar.cur not working. Maybe adapt.iter needs to be > burn?
+# implement tps fully (STFAfull)
+
+### Plotting functions
+# Implement "add=T" stuff into functions?
+
+### Ideas?
 # S*alpha only for non-fixed locations?
 # So, have S only include non-fixed locations?
-# Zero centered legend option
+# Should uncertainty be wider?
 
-### Questions ###
-# Should I include ess checks in the code? Does it even matter?
+### NOTES
+# tps changes n.load.bases and n.spatial.bases to floor(sqrt(n.load.bases))^2
+# n.temp.bases will automatically become even
+
+### Questions
+# Show how package looks on github.
+# Global functions like plot, summary, etc. What would that look like? What would the default be?
+# Discuss vignette outline used by Bobby Gramacy. Do you like that?
+# How would the methodology section look?
+# What would my defense look like? Any discussion of theory, just showing the package, etc.? Live coding demo?
+
 
 
 ##### STFA FUNCTION - FA Reduction built in #####
@@ -41,13 +49,13 @@ STFA <- function(ymat, dates, coords,
                  n.seasn.knots=7,
                  spatial.style='fourier',
                  n.spatial.bases=ifelse(spatial.style=='fourier',8,NULL),
-                 knot.levels=2, max.knot.dist=mean(dist(coords)), premade.knots=NULL, plot.knots=TRUE,
-                 n.factors=min(4,ceiling(n.locs/20)), factors.fixed=NULL, plot.factors=TRUE,
+                 knot.levels=2, max.knot.dist=mean(dist(coords)), premade.knots=NULL, plot.knots=FALSE,
+                 n.factors=min(4,ceiling(n.locs/20)), factors.fixed=NULL, plot.factors=FALSE,
                  load.style='fourier',
                  n.load.bases=ifelse(load.style=='fourier',6,NULL),
                  freq.lon=(max(coords[,1])-min(coords[,1]))^2,
                  freq.lat=(max(coords[,2])-min(coords[,2]))^2,
-                 n.temp.bases=floor(n.times*0.10),
+                 n.temp.bases=ifelse(floor(n.times*0.10)%%2==1, floor(n.times*0.10)-1, floor(n.times*0.10)),
                  freq.temp=n.times,
                  alpha.prec=1/100000, tau2.gamma=2, tau2.phi=0.0000001, sig2.gamma=2, sig2.phi=1e-5,
                  sig2=as.vector(var(y)), beta=NULL, xi=NULL,
@@ -84,7 +92,7 @@ STFA <- function(ymat, dates, coords,
   ### Change x to matrix if not null
   if (!is.null(x)) x <- as.matrix(x)
 
-  knots.vec.save = NULL
+  knots.vec.save.spatial = NULL
   ### Create newS
   if (spatial.style=='grid') {
     if (is.null(premade.knots)) {
@@ -100,7 +108,7 @@ STFA <- function(ymat, dates, coords,
                            premade.knots=premade.knots)
 
     newS = newS.output[[1]]
-    knots.vec.save = newS.output[[2]]
+    knots.vec.save.spatial = newS.output[[2]]
   }
   if (spatial.style=='fourier') {
     if (n.spatial.bases%%2 == 1) {
@@ -132,17 +140,18 @@ STFA <- function(ymat, dates, coords,
     # newS = cbind(m.fft[1:n.locs,], m.fft[(n.locs+1):(2*n.locs),])
   }
   if (spatial.style=='tps') {
-    dim = sqrt(n.spatial.bases)
-    xxx = yyy = seq(1/(dim*2), (dim*2-1)/(dim*2), by=1/dim)
-    knots = expand.grid(xxx,yyy)
+    dd = floor(sqrt(n.spatial.bases))
+    xxx = yyy = seq(1/(dd*2), (dd*2-1)/(dd*2), by=1/dd)
+    knots.spatial = expand.grid(xxx,yyy)
     range_long = max(coords[,1]) - min(coords[,1])
     range_lat = max(coords[,2]) - min(coords[,2])
-    knots[,1] = (knots[,1] * range_long) + min(coords[,1])
-    knots[,2] = (knots[,2] * range_lat) + min(coords[,2])
-    knots.vec.save = knots
+    knots.spatial[,1] = (knots.spatial[,1] * range_long) + min(coords[,1])
+    knots.spatial[,2] = (knots.spatial[,2] * range_lat) + min(coords[,2])
+    knots.vec.save.spatial = knots.spatial
     newS = npreg::basis.tps(coords,
-                     knots=knots,
+                     knots=knots.spatial,
                      rk=FALSE)[,-(1:2)]
+    n.spatial.bases = dd^2
   }
 
   model.matrices <- list()
@@ -256,15 +265,10 @@ STFA <- function(ymat, dates, coords,
     # bigQT <- kronecker(QT, diag(1,n.factors))
 
     ### Fourier Method
-    freq=freq.temp
-    if (n.temp.bases%%2 == 1) {
-      n.temp.bases=n.temp.bases+1
-      print(paste("n.temp.bases cannot be odd; changed value to", n.temp.bases))
-    }
     # Create Fourier basis functions
     m.fft <- sapply(1:(n.temp.bases/2), function(k) {
-      sin_term <- sin(2 * pi * k * (1:n.times)/freq)
-      cos_term <- cos(2 * pi * k * (1:n.times)/freq)
+      sin_term <- sin(2 * pi * k * (1:n.times)/freq.temp)
+      cos_term <- cos(2 * pi * k * (1:n.times)/freq.temp)
       cbind(sin_term, cos_term)
     })
     QT <- cbind(m.fft[1:n.times,], m.fft[(n.times+1):(2*n.times),])
@@ -296,6 +300,7 @@ STFA <- function(ymat, dates, coords,
     # model.matrices$QS = QS
 
     ### Bisquare Method
+    knots.vec.save.load=NULL
     if (load.style == 'grid') {
       if (is.null(premade.knots)) {
         n.load.bases=0
@@ -315,7 +320,7 @@ STFA <- function(ymat, dates, coords,
                                plot.knots=plot.knots,
                                premade.knots=premade.knots)
         QS = newS.output[[1]]
-        knots.vec.save = newS.output[[2]]
+        knots.vec.save.load = newS.output[[2]]
       }
     }
 
@@ -341,18 +346,18 @@ STFA <- function(ymat, dates, coords,
       QS <- QSlat*QSlon
     }
     if (load.style=='tps') {
-      dim = sqrt(n.load.bases)
-      xxx = yyy = seq(1/(dim*2), (dim*2-1)/(dim*2), by=1/dim)
-      knots = expand.grid(xxx,yyy)
+      dd = floor(sqrt(n.load.bases))
+      xxx = yyy = seq(1/(dd*2), (dd*2-1)/(dd*2), by=1/dd)
+      knots.load = expand.grid(xxx,yyy)
       range_long = max(coords[,1]) - min(coords[,1])
       range_lat = max(coords[,2]) - min(coords[,2])
-      knots[,1] = (knots[,1] * range_long) + min(coords[,1])
-      knots[,2] = (knots[,2] * range_lat) + min(coords[,2])
-      knots.vec.save = knots
-      library(npreg)
+      knots.load[,1] = (knots.load[,1] * range_long) + min(coords[,1])
+      knots.load[,2] = (knots.load[,2] * range_lat) + min(coords[,2])
+      knots.vec.save.load = knots.load
       QS = npreg::basis.tps(coords,
-                     knots=knots,
+                     knots=knots.load,
                      rk=FALSE)[,-(1:2)]
+      n.load.bases = dd^2
     }
 
     ### Gaussian Method
@@ -472,19 +477,19 @@ STFA <- function(ymat, dates, coords,
         tau2.mu.save[,(i-burn)/thin] <- tau2.mu
       }
 
-      if (((i-burn)/thin)>eSS.converged & i%%eSS.check==0 & verbose) {
-        eSS = apply(mu.save,1,effectiveSize)
-        prop.converged=round(length(which(eSS>eSS.converged))/dim(mu.save)[1],2)*100
-        print(paste(prop.converged,"% of mu parameters have eSS > ",eSS.converged, sep=""))
-
-        eSS = apply(alpha.mu.save,1,effectiveSize)
-        prop.converged=round(length(which(eSS>eSS.converged))/dim(alpha.mu.save)[1],2)*100
-        print(paste(prop.converged,"% of alpha.mu parameters have eSS > ",eSS.converged, sep=""))
-
-        eSS = apply(tau2.mu.save,1,effectiveSize)
-        prop.converged=round(length(which(eSS>eSS.converged))/dim(tau2.mu.save)[1],2)*100
-        print(paste(prop.converged,"% of tau2.mu parameters have eSS > ",eSS.converged, sep=""))
-      }
+      # if (((i-burn)/thin)>eSS.converged & i%%eSS.check==0 & verbose) {
+      #   eSS = apply(mu.save,1,effectiveSize)
+      #   prop.converged=round(length(which(eSS>eSS.converged))/dim(mu.save)[1],2)*100
+      #   print(paste(prop.converged,"% of mu parameters have eSS > ",eSS.converged, sep=""))
+      #
+      #   eSS = apply(alpha.mu.save,1,effectiveSize)
+      #   prop.converged=round(length(which(eSS>eSS.converged))/dim(alpha.mu.save)[1],2)*100
+      #   print(paste(prop.converged,"% of alpha.mu parameters have eSS > ",eSS.converged, sep=""))
+      #
+      #   eSS = apply(tau2.mu.save,1,effectiveSize)
+      #   prop.converged=round(length(which(eSS>eSS.converged))/dim(tau2.mu.save)[1],2)*100
+      #   print(paste(prop.converged,"% of tau2.mu parameters have eSS > ",eSS.converged, sep=""))
+      # }
     }
 
 
@@ -519,19 +524,19 @@ STFA <- function(ymat, dates, coords,
       }
 
       ### eSS check for beta
-      if (((i-burn)/thin)>eSS.converged & i%%eSS.check==0 & verbose) {
-        eSS = apply(beta.save,1,effectiveSize)
-        prop.converged=round(length(which(eSS>eSS.converged))/dim(beta.save)[1],2)*100
-        print(paste(prop.converged,"% of beta parameters have eSS > ",eSS.converged, sep=""))
-
-        eSS = apply(alpha.beta.save,1,effectiveSize)
-        prop.converged=round(length(which(eSS>eSS.converged))/dim(alpha.beta.save)[1],2)*100
-        print(paste(prop.converged,"% of alpha.beta parameters have eSS > ",eSS.converged, sep=""))
-
-        eSS = apply(tau2.beta.save,1,effectiveSize)
-        prop.converged=round(length(which(eSS>eSS.converged))/dim(tau2.beta.save)[1],2)*100
-        print(paste(prop.converged,"% of tau2.beta parameters have eSS > ",eSS.converged, sep=""))
-      }
+      # if (((i-burn)/thin)>eSS.converged & i%%eSS.check==0 & verbose) {
+      #   eSS = apply(beta.save,1,effectiveSize)
+      #   prop.converged=round(length(which(eSS>eSS.converged))/dim(beta.save)[1],2)*100
+      #   print(paste(prop.converged,"% of beta parameters have eSS > ",eSS.converged, sep=""))
+      #
+      #   eSS = apply(alpha.beta.save,1,effectiveSize)
+      #   prop.converged=round(length(which(eSS>eSS.converged))/dim(alpha.beta.save)[1],2)*100
+      #   print(paste(prop.converged,"% of alpha.beta parameters have eSS > ",eSS.converged, sep=""))
+      #
+      #   eSS = apply(tau2.beta.save,1,effectiveSize)
+      #   prop.converged=round(length(which(eSS>eSS.converged))/dim(tau2.beta.save)[1],2)*100
+      #   print(paste(prop.converged,"% of tau2.beta parameters have eSS > ",eSS.converged, sep=""))
+      # }
     }
 
     ### Sample Xi
@@ -565,19 +570,19 @@ STFA <- function(ymat, dates, coords,
       }
 
       ### eSS check for xi
-      if (((i-burn)/thin)>eSS.converged & i%%eSS.check==0 & verbose) {
-        eSS = apply(xi.save,1,effectiveSize)
-        prop.converged=round(length(which(eSS>eSS.converged))/dim(xi.save)[1],2)*100
-        print(paste(prop.converged,"% of xi parameters have eSS > ",eSS.converged, sep=""))
-
-        eSS = apply(alpha.xi.save,1,effectiveSize)
-        prop.converged=round(length(which(eSS>eSS.converged))/dim(alpha.xi.save)[1],2)*100
-        print(paste(prop.converged,"% of alpha.xi parameters have eSS > ",eSS.converged, sep=""))
-
-        eSS = apply(tau2.xi.save,1,effectiveSize)
-        prop.converged=round(length(which(eSS>eSS.converged))/dim(tau2.xi.save)[1],2)*100
-        print(paste(prop.converged,"% of tau2.xi parameters have eSS > ",eSS.converged, sep=""))
-      }
+      # if (((i-burn)/thin)>eSS.converged & i%%eSS.check==0 & verbose) {
+      #   eSS = apply(xi.save,1,effectiveSize)
+      #   prop.converged=round(length(which(eSS>eSS.converged))/dim(xi.save)[1],2)*100
+      #   print(paste(prop.converged,"% of xi parameters have eSS > ",eSS.converged, sep=""))
+      #
+      #   eSS = apply(alpha.xi.save,1,effectiveSize)
+      #   prop.converged=round(length(which(eSS>eSS.converged))/dim(alpha.xi.save)[1],2)*100
+      #   print(paste(prop.converged,"% of alpha.xi parameters have eSS > ",eSS.converged, sep=""))
+      #
+      #   eSS = apply(tau2.xi.save,1,effectiveSize)
+      #   prop.converged=round(length(which(eSS>eSS.converged))/dim(tau2.xi.save)[1],2)*100
+      #   print(paste(prop.converged,"% of tau2.xi parameters have eSS > ",eSS.converged, sep=""))
+      # }
     }
 
     ### Sample Factors
@@ -643,23 +648,23 @@ STFA <- function(ymat, dates, coords,
       }
 
       ### eSS check for FA
-      if (((i-burn)/thin)>eSS.converged & i%%eSS.check==0 & verbose) {
-        eSS = apply(alphaT.save,1,effectiveSize)
-        prop.converged=round(length(which(eSS>eSS.converged))/dim(alphaT.save)[1],2)*100
-        print(paste(prop.converged,"% of alphaT parameters have eSS > ",eSS.converged, sep=""))
-
-        eSS = apply(alphaS.save,1,effectiveSize)
-        prop.converged=round(length(which(eSS>eSS.converged))/dim(alphaS.save)[1],2)*100
-        print(paste(prop.converged,"% of alphaS parameters have eSS > ",eSS.converged, sep=""))
-
-        eSS = effectiveSize(t(tau2.lambda.save))
-        prop.converged=round(length(which(eSS>eSS.converged))/1,2)*100
-        print(paste(prop.converged,"% of tau2.lambda parameters have eSS > ",eSS.converged, sep=""))
-
-        eSS = apply(Lambda.save,1,effectiveSize)
-        prop.converged=round(length(which(eSS>eSS.converged))/dim(Lambda.save)[1],2)*100
-        print(paste(prop.converged,"% of Lambda parameters have eSS > ",eSS.converged, sep=""))
-      }
+      # if (((i-burn)/thin)>eSS.converged & i%%eSS.check==0 & verbose) {
+      #   eSS = apply(alphaT.save,1,effectiveSize)
+      #   prop.converged=round(length(which(eSS>eSS.converged))/dim(alphaT.save)[1],2)*100
+      #   print(paste(prop.converged,"% of alphaT parameters have eSS > ",eSS.converged, sep=""))
+      #
+      #   eSS = apply(alphaS.save,1,effectiveSize)
+      #   prop.converged=round(length(which(eSS>eSS.converged))/dim(alphaS.save)[1],2)*100
+      #   print(paste(prop.converged,"% of alphaS parameters have eSS > ",eSS.converged, sep=""))
+      #
+      #   eSS = effectiveSize(t(tau2.lambda.save))
+      #   prop.converged=round(length(which(eSS>eSS.converged))/1,2)*100
+      #   print(paste(prop.converged,"% of tau2.lambda parameters have eSS > ",eSS.converged, sep=""))
+      #
+      #   eSS = apply(Lambda.save,1,effectiveSize)
+      #   prop.converged=round(length(which(eSS>eSS.converged))/dim(Lambda.save)[1],2)*100
+      #   print(paste(prop.converged,"% of Lambda parameters have eSS > ",eSS.converged, sep=""))
+      # }
     }
 
     ### Sample sigma2
@@ -678,11 +683,11 @@ STFA <- function(ymat, dates, coords,
     }
 
     ### eSS check for sig2
-    if (((i-burn)/thin)>eSS.converged & i%%eSS.check==0 & verbose) {
-      eSS = effectiveSize(t(sig2.save))
-      prop.converged=round(length(which(eSS>eSS.converged))/dim(sig2.save)[1],2)*100
-      print(paste(prop.converged,"% of sig2 parameters have eSS > ",eSS.converged, sep=""))
-    }
+    # if (((i-burn)/thin)>eSS.converged & i%%eSS.check==0 & verbose) {
+    #   eSS = effectiveSize(t(sig2.save))
+    #   prop.converged=round(length(which(eSS>eSS.converged))/dim(sig2.save)[1],2)*100
+    #   print(paste(prop.converged,"% of sig2 parameters have eSS > ",eSS.converged, sep=""))
+    # }
 
     ### Fill in missing data
     y[missing] = Jfullmu.long[missing] + Tfullbeta.long[missing] +
@@ -737,7 +742,8 @@ STFA <- function(ymat, dates, coords,
                 "coords" = coords,
                 "doy" = doy,
                 "dates" = dates,
-                "knots" = knots.vec.save,
+                "knots.spatial" = knots.vec.save.spatial,
+                "knots.load" = knots.vec.save.load,
                 "knot.levels" = knot.levels,
                 "load.style" = load.style,
                 "spatial.style" = spatial.style,
@@ -750,7 +756,6 @@ STFA <- function(ymat, dates, coords,
                 "n.spatial.bases" = n.spatial.bases,
                 "n.temp.bases" = n.temp.bases,
                 "n.load.bases" = n.load.bases,
-                "sigma" = sigma,
                 "draws" = dim(coda::as.mcmc(t(beta.save)))[1])
 
   save(output, file=filename)
