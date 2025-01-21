@@ -27,29 +27,29 @@ devtools::load_all()
 ```{r}
 my_mvrnorm(1,1)
 
-load('/Users/adamiser/Desktop/Research/TempDataForSTFA.Rdata')
-
-Cmoonmean <- locdat.T
-for(i in 1:n.locations){
-  Cmoonmean[,i] <- locdat.T[,i] - mean(locdat.T[,i], na.rm=T)
-}
-Cmoonmean.T <- Cmoonmean
-missing <- which(is.na(Cmoonmean)==T)
-Cmoonmean <- as.matrix(Cmoonmean)
-y <- c(Cmoonmean)
-doy = as.numeric(x_set)
-ymat = Cmoonmean
-coords = rbind(gauges.reg[,c(2,3)])
-
-ymat.use = ymat[200:1450,]
-mydate.use = mydate[200:1450]
-
-utahDataList = list('TemperatureVals' = ymat.use,
-                    'Dates' = mydate.use,
-                    'Coords' = coords,
-                    'Locations' = gauges.reg$Station)
-
-usethis::use_data(utahDataList,overwrite=TRUE)
+# load('/Users/adamiser/Desktop/Research/TempDataForSTFA.Rdata')
+# 
+# Cmoonmean <- locdat.T
+# for(i in 1:n.locations){
+#   Cmoonmean[,i] <- locdat.T[,i] - mean(locdat.T[,i], na.rm=T)
+# }
+# Cmoonmean.T <- Cmoonmean
+# missing <- which(is.na(Cmoonmean)==T)
+# Cmoonmean <- as.matrix(Cmoonmean)
+# y <- c(Cmoonmean)
+# doy = as.numeric(x_set)
+# ymat = Cmoonmean
+# coords = rbind(gauges.reg[,c(2,3)])
+# 
+# ymat.use = ymat[200:1450,]
+# mydate.use = mydate[200:1450]
+# 
+# utahDataList = list('TemperatureVals' = ymat.use,
+#                     'Dates' = mydate.use,
+#                     'Coords' = coords,
+#                     'Locations' = gauges.reg$Station)
+# 
+# usethis::use_data(utahDataList,overwrite=TRUE)
 
 devtools::load_all()
 out = STFA(iters=100,ymat=utahDataList$TemperatureVals,
@@ -80,12 +80,11 @@ devtools::load_all()
 plot.map(out,parameter='slope',location='utah',state=TRUE,map=TRUE,
          with.uncertainty = FALSE)
 
-preds = predictSTFA(out,location=10,type='all')
-preds.mean = predictSTFA(out,location=10,type='mean')
-predictSTFA(out,location=10,type='ub') - predictSTFA(out,location=10,type='lb') 
 predictSTFA(out,location=data.frame('Longitude' = -111.96, 'Latitude' = 41.06))
 plot.location(out,location=10,truth=TRUE)
 plot.location(out,location=data.frame('Longitude' = -111.96, 'Latitude' = 41.06))
+
+preds = preds
 ```
 
 ### Function fixing
@@ -104,14 +103,23 @@ dim(out$alphaS)
 out$n.spatial.bases
 
 par(mfrow=c(1,1))
-plot.location(out,1,xrange=c('1959-01-01', '1979-01-01'))
+plot.location(out,1,xrange=c('1969-01-01', '1979-01-01'),truth = TRUE)
 devtools::load_all()
+
+preds1 = predictSTFA(out,location=1,type='ub')
+
+preds2 = predictSTFA(out,location=1,type='ub')
+
+
+
 plot.location(out, location=data.frame('Longitude' = -111.96, 'Latitude' = 41.06),
          uncertainty=TRUE, xrange=c('1959-01-01', '1979-01-01'))
 
 plot.grid(out,parameter='loadings',loadings=1)
 plot.grid(out,parameter='slope')
 
+plot.map(out,parameter='slope',location='utah',state=TRUE,map=TRUE,
+         with.uncertainty = TRUE)
 plot.map(out,parameter='slope',location='utah',state=TRUE,map=TRUE,
          with.uncertainty = FALSE)
 plot.map(out,parameter='loading',location='utah',state=TRUE,map=TRUE,

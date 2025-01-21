@@ -2,7 +2,6 @@
 ### Model function STFA
 # Implement ... argument into function
 # Check default values for everything, comment on differences
-# Look closer at eSS checking during the function
 # Make n.load.bases and n.spatial.bases arguments make more sense for all basis styles
 # How do covariates work?
 
@@ -16,18 +15,20 @@
 ### Ideas?
 # S*alpha only for non-fixed locations?
 # So, have S only include non-fixed locations?
-# Should uncertainty be wider?
 
 ### NOTES
 # tps changes n.load.bases and n.spatial.bases to floor(sqrt(n.load.bases))^2
 # n.temp.bases will automatically become even
+# I don't think we do uncertainty in plot.map or plot.annual since those are
+  # plotting the MEAN of those processes.
+  # We then get a CI around the MEAN slope,loading,seasonal,etc.
 
 ### Questions
 # Show how package looks on github.
 # Global functions like plot, summary, etc. What would that look like? What would the default be?
 # Discuss vignette outline used by Bobby Gramacy. Do you like that?
-# How would the methodology section look?
 # What would my defense look like? Any discussion of theory, just showing the package, etc.? Live coding demo?
+# Prediction discussion.
 
 
 

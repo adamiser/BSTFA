@@ -35,10 +35,16 @@ predictSTFA = function(out, location=NULL, type='mean',
     for(i in 1:out$draws){
       facts[,i] <- c(matrix(out$PFmat[i,],nrow=out$n.times,ncol=out$n.factors,byrow=FALSE)%*%t(matrix(out$Lambda[i,lam.seq],nrow=length(location),ncol=out$n.factors,byrow=TRUE)))
     }
+
+    resid = matrix(rnorm(out$draws*out$n.times,
+                         mean=rep(0,out$draws*out$n.times),
+                         sd=sqrt(rep(c(out$sig2),each=out$n.times))),ncol=out$draws,byrow=TRUE)
+
     ypreds = kronecker(diag(length(location)), rep(1,out$n.times))%*%matrix(t(out$mu)[location,],nrow=length(location)) +
       kronecker(diag(length(location)), out$model.matrices$linear.Tsub)%*%matrix(t(out$beta)[location,],nrow=length(location)) +
       kronecker(diag(length(location)), out$model.matrices$seasonal.bs.basis)%*%t(out$xi)[xi.seq,] +
-      facts
+      facts +
+      resid
 
   } else if (length(dim(location))>1) { # predict at a new location (coordinates should have given to location)
 
@@ -77,19 +83,35 @@ predictSTFA = function(out, location=NULL, type='mean',
       predS <- predS[complete.cases(predS),]
     }
 
-    mupred <- predS%*%t(out$alpha.mu)
+    ### Mu
+    mumean <- predS%*%t(out$alpha.mu)
+    muresid = matrix(rnorm(nrow(location)*out$draws,
+                             mean=rep(0,nrow(location)*out$draws),
+                             sd=sqrt(rep(c(out$tau2.mu),each=nrow(location)))),ncol=out$draws,byrow=TRUE)
+    mupred <- mumean + muresid
     mulong = kronecker(Matrix::Diagonal(nrow(location)),
                        rep(1,out$n.times))%*%mupred
 
-    betapred <- predS%*%t(out$alpha.beta)
+    ### Beta (linear slope)
+    betamean = predS%*%t(out$alpha.beta)
+    betaresid = matrix(rnorm(nrow(location)*out$draws,
+                             mean=rep(0,nrow(location)*out$draws),
+                             sd=sqrt(rep(c(out$tau2.beta),each=nrow(location)))),ncol=out$draws,byrow=TRUE)
+    betapred <- betamean + betaresid
     betalong = kronecker(Matrix::Diagonal(nrow(location)),
                          out$model.matrices$linear.Tsub)%*%betapred
 
+    ### Xi (seasonal)
     predS.xi = as(kronecker(predS, diag(out$n.seasn.knots)), "sparseMatrix")
-    xipred <- predS.xi%*%t(out$alpha.xi)
+    ximean <- predS.xi%*%t(out$alpha.xi)
+    xiresid <- matrix(rnorm(nrow(location)*out$n.seasn.knots*out$draws,
+                            mean=rep(0,nrow(location)*out$n.seasn.knots*out$draws),
+                            sd=sqrt(rep(c(out$tau2.xi),each=nrow(location)*out$n.seasn.knots))),ncol=out$draws,byrow=TRUE)
+    xipred <- ximean + xiresid
     xilong = kronecker(Matrix::Diagonal(nrow(location)),
                        out$model.matrices$seasonal.bs.basis)%*%xipred
 
+    ### Factor Analysis
     if (out$load.style == 'grid') {
       predQS <- NULL
       for(kk in 1:length(out$knots.load)) {
@@ -117,17 +139,27 @@ predictSTFA = function(out, location=NULL, type='mean',
       predQS = matrix(npreg::basis.tps(coords_added, knots=out$knots.load, rk=TRUE)[-(1:nrow(out$coords)),-(1:2)],ncol=out$n.load.bases)
     }
 
+    # Lambda (loadings)
     Lam = array(dim=c(nrow(predQS),out$n.factors,out$draws))
     for (i in 1:out$draws) {
-      Lam[,,i] = predQS%*%matrix(out$alphaS[i,],nrow=out$n.load.bases,ncol=out$n.factors,byrow=TRUE)
+      Lammean = predQS%*%matrix(out$alphaS[i,],nrow=out$n.load.bases,ncol=out$n.factors,byrow=TRUE)
+      Lamresid = matrix(rnorm(nrow(location)*out$n.factors,
+                              mean=rep(0,nrow(location)*out$n.factors),
+                              sd=sqrt(rep(c(out$tau2.lambda[i,]),each=out$n.factors))),ncol=out$n.factors,byrow=TRUE)
+      Lam[,,i] = Lammean + Lamresid
     }
 
+    # F (factor scores)
     facts = array(dim=c(out$n.times,nrow(location),out$draws))
     for (i in 1:out$draws) {
       facts[,,i] = matrix(out$PFmat[i,],nrow=out$n.times,ncol=out$n.factors)%*%matrix(t(Lam[,,i]),nrow=out$n.factors,ncol=nrow(location))
     }
 
-    ypreds = mulong + betalong + xilong + matrix(facts, nrow=out$n.times*nrow(location), ncol=out$draws)
+    resid = matrix(rnorm(out$draws*out$n.times,
+                         mean=rep(0,out$draws*out$n.times),
+                         sd=sqrt(rep(c(out$sig2),each=out$n.times))),ncol=out$draws,byrow=TRUE)
+
+    ypreds = mulong + betalong + xilong + matrix(facts, nrow=out$n.times*nrow(location), ncol=out$draws) + resid
 
   }
 
@@ -407,20 +439,36 @@ plot.map = function(out, parameter='slope', yearscale=TRUE, new_x=NULL,
 
   if (parameter=='slope') {
     legend.name = 'Slope'
+    betamean <- predS%*%t(out$alpha.beta)
+    betaresid <- matrix(rnorm(fine^2*out$draws,
+                             mean=rep(0,fine^2*out$draws),
+                             sd=sqrt(rep(c(out$tau2.beta),each=fine^2))),ncol=out$draws,byrow=TRUE)
+    # betapred <- betamean + betaresid
+    betapred <- betamean
     if (yearscale) {
-      pred <- predS%*%t(out$alpha.beta)*365.25/(out$doy[2] - out$doy[1])
+      pred <- betapred*365.25/(out$doy[2] - out$doy[1])
     } else {
-      pred <- predS%*%t(out$alpha.beta)
+      pred <- betapred
     }
   }
   if (parameter=='mean') {
-    pred <- predS%*%t(out$alpha.mu)
     legend.name = 'Mean'
+    mumean <- predS%*%t(out$alpha.mu)
+    muresid <- matrix(rnorm(fine^2*out$draws,
+                              mean=rep(0,fine^2*out$draws),
+                              sd=sqrt(rep(c(out$tau2.mu),each=fine^2))),ncol=out$draws,byrow=TRUE)
+    # pred <- mumean + muresid
+    pred <- mumean
   }
 
   if (parameter=='loading') {
     legend.name = paste('Loading', loading)
-    pred <- predS%*%t(out$alphaS)[seq(loading,out$n.load.bases*out$n.factors,by=out$n.factors),]
+    lammean <- predS%*%t(out$alphaS)[seq(loading,out$n.load.bases*out$n.factors,by=out$n.factors),]
+    lamresid <- matrix(rnorm(fine^2*out$draws,
+                             mean=rep(0,fine^2*out$draws),
+                             sd=sqrt(rep(c(out$tau2.lambda),each=fine^2))),ncol=out$draws,byrow=TRUE)
+    # pred <- lammean + lamresid
+    pred <- lammean
 
     ### Spatial Gaussian
     # if (spatial=='gaussian') {
@@ -722,7 +770,12 @@ plot.annual <- function(out, location, add=F,
     }
 
     predS.xi = as(kronecker(predS, diag(out$n.seasn.knots)), "sparseMatrix")
-    xi.pred <- predS.xi%*%t(out$alpha.xi)
+    ximean <- predS.xi%*%t(out$alpha.xi)
+    xiresid <- matrix(rnorm(nrow(location)*out$n.seasn.knots*out$draws,
+                            mean=rep(0,nrow(location)*out$n.seasn.knots*out$draws),
+                            sd=sqrt(rep(c(out$tau2.xi),each=nrow(location)*out$n.seasn.knots))),ncol=out$draws,byrow=TRUE)
+    # xi.pred <- ximean + xiresid
+    xi.pred <- ximean
     ann.pred <- bs.basis%*%xi.pred
     ann.pred.mean <- apply(ann.pred, 1, mean)
     if(interval>0){
