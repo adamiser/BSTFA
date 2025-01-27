@@ -1,6 +1,9 @@
 ---
 title: "BSTFA"
-output: rmarkdown::html_vignette
+output: 
+  bookdown::html_document2:
+    toc: true
+    number_sections: true
 vignette: >
   %\VignetteIndexEntry{BSTFA}
   %\VignetteEngine{knitr::rmarkdown}
@@ -22,11 +25,8 @@ devtools::load_all()
 
 ```
 
-### Testing
 
-```{r}
-my_mvrnorm(1,1)
-
+```{r, echo=FALSE, include=FALSE}
 # load('/Users/adamiser/Desktop/Research/TempDataForSTFA.Rdata')
 # 
 # Cmoonmean <- locdat.T
@@ -51,102 +51,144 @@ my_mvrnorm(1,1)
 # 
 # usethis::use_data(utahDataList,overwrite=TRUE)
 
-devtools::load_all()
-out = STFA(iters=100,ymat=utahDataList$TemperatureVals,
-           dates=utahDataList$Dates,
-           coords=utahDataList$Coords,
-           factors.fixed = c(144,89,129,78), n.seasn.knots=7,
-           spatial.style='fourier', load.style='fourier', plot.factors = FALSE,
-           n.spatial.bases = 8, n.load.bases = 8,
-           freq.lat = 40, freq.lon = 30)
-computation.summary(out)
-check.convergence(out)
-
-plot.location(out,location=10)
-
-plot.grid(out,parameter='slope')
-plot.grid(out,parameter='loadings',loading=1)
-plot.grid(out,parameter='loadings',loading=2)
-plot.grid(out,parameter='loadings',loading=3)
-plot.grid(out,parameter='loadings',loading=4)
-
-plot.factor(out, together=TRUE)
-
-plot.trace(out, parameter='beta', param.range=1:5)
-
-plot.annual(out,location=10)
-
-devtools::load_all()
-plot.map(out,parameter='slope',location='utah',state=TRUE,map=TRUE,
-         with.uncertainty = FALSE)
-
-predictSTFA(out,location=data.frame('Longitude' = -111.96, 'Latitude' = 41.06))
-plot.location(out,location=10,truth=TRUE)
-plot.location(out,location=data.frame('Longitude' = -111.96, 'Latitude' = 41.06))
-
-preds = preds
-```
-
-### Function fixing
-
-```{r}
-devtools::load_all()
-
-out = STFA(iters=100,ymat=utahDataList$TemperatureVals,
-           dates=utahDataList$Dates,
-           coords=utahDataList$Coords,
-           factors.fixed = c(144,89,129,78), n.seasn.knots=7,
-           spatial.style='fourier', load.style='fourier',
-           n.load.bases = 8, n.spatial.bases = 12, n.temp.bases=126,
-           verbose=FALSE, plot.factors=FALSE)
-dim(out$alphaS)
-out$n.spatial.bases
-
-par(mfrow=c(1,1))
-plot.location(out,1,xrange=c('1969-01-01', '1979-01-01'),truth = TRUE)
-devtools::load_all()
-
-preds1 = predictSTFA(out,location=1,type='ub')
-
-preds2 = predictSTFA(out,location=1,type='ub')
-
-
-
-plot.location(out, location=data.frame('Longitude' = -111.96, 'Latitude' = 41.06),
-         uncertainty=TRUE, xrange=c('1959-01-01', '1979-01-01'))
-
-plot.grid(out,parameter='loadings',loadings=1)
-plot.grid(out,parameter='slope')
-
-plot.map(out,parameter='slope',location='utah',state=TRUE,map=TRUE,
-         with.uncertainty = TRUE)
-plot.map(out,parameter='slope',location='utah',state=TRUE,map=TRUE,
-         with.uncertainty = FALSE)
-plot.map(out,parameter='loading',location='utah',state=TRUE,map=TRUE,
-         with.uncertainty = FALSE, loading=1)
-plot.map(out,parameter='loading',location='utah',state=TRUE,map=TRUE,
-         with.uncertainty = FALSE, loading=2)
-
-plot.factor(out, factor=4, together=TRUE)
-
-devtools::load_all()
-plot.annual(out,location=1,interval=0.99,years='all')
-plot.annual(out,location=1,interval=0.95,years='one')
-plot.annual(out,location=data.frame('Longitude' = -111.96, 'Latitude' = 41.06),years='one',add=T)
-
+# devtools::load_all()
+# out = STFA(iters=10000,ymat=utahDataList$TemperatureVals,
+#            dates=utahDataList$Dates,
+#            coords=utahDataList$Coords,
+#            factors.fixed = c(144,89,129,78), n.seasn.knots=7,
+#            spatial.style='fourier', load.style='fourier', plot.factors = FALSE,
+#            n.spatial.bases = 8, n.load.bases = 8,
+#            freq.lat = 40, freq.lon = 30)
+# computation.summary(out)
+# check.convergence(out)
+# 
+# plot.location(out,location=10)
+# 
+# plot.grid(out,parameter='slope')
+# plot.grid(out,parameter='loadings',loading=1)
+# plot.grid(out,parameter='loadings',loading=2)
+# plot.grid(out,parameter='loadings',loading=3)
+# plot.grid(out,parameter='loadings',loading=4)
+# 
+# plot.factor(out, together=TRUE)
+# 
+# plot.trace(out, parameter='beta', param.range=1:5)
+# 
+# plot.annual(out,location=10)
+# 
+# devtools::load_all()
+# plot.map(out,parameter='slope',location='utah',state=TRUE,map=TRUE,
+#          with.uncertainty = FALSE)
+# 
+# predictSTFA(out,location=data.frame('Longitude' = -111.96, 'Latitude' = 41.06))
+# plot.location(out,location=10,truth=TRUE)
+# plot.location(out,location=data.frame('Longitude' = -111.96, 'Latitude' = 41.06))
+# 
+# preds = preds
 ```
 
 
+```{r, echo=FALSE, include=FALSE}
+# devtools::load_all()
+# 
+# out = STFA(iters=100,ymat=utahDataList$TemperatureVals,
+#            dates=utahDataList$Dates,
+#            coords=utahDataList$Coords,
+#            factors.fixed = c(144,89,129,78), n.seasn.knots=7,
+#            spatial.style='fourier', load.style='fourier',
+#            n.load.bases = 8, n.spatial.bases = 12, n.temp.bases=126,
+#            verbose=FALSE, plot.factors=FALSE)
+# 
+# par(mfrow=c(1,1))
+# plot.location(out,1,xrange=c('1969-01-01', '1979-01-01'),truth = TRUE)
+# devtools::load_all()
+# 
+# preds1 = predictSTFA(out,location=1,type='ub')
+# 
+# preds2 = predictSTFA(out,location=1,type='ub')
+# 
+# 
+# 
+# plot.location(out, location=data.frame('Longitude' = -111.96, 'Latitude' = 41.06),
+#          uncertainty=TRUE, xrange=c('1959-01-01', '1979-01-01'))
+# 
+# plot.grid(out,parameter='loadings',loadings=1)
+# plot.grid(out,parameter='slope')
+# 
+# plot.map(out,parameter='slope',location='utah',state=TRUE,map=TRUE,
+#          with.uncertainty = TRUE)
+# plot.map(out,parameter='slope',location='utah',state=TRUE,map=TRUE,
+#          with.uncertainty = FALSE)
+# plot.map(out,parameter='loading',location='utah',state=TRUE,map=TRUE,
+#          with.uncertainty = FALSE, loading=1)
+# plot.map(out,parameter='loading',location='utah',state=TRUE,map=TRUE,
+#          with.uncertainty = FALSE, loading=2)
+# plot.map(out,parameter='loading',location='utah',state=TRUE,map=TRUE,
+#          with.uncertainty = FALSE, loading=3)
+# plot.map(out,parameter='loading',location='utah',state=TRUE,map=TRUE,
+#          with.uncertainty = FALSE, loading=4)
+# 
+# plot.factor(out, factor=4, together=TRUE)
+# 
+# devtools::load_all()
+# plot.annual(out,location=1,interval=0.99,years='all')
+# plot.annual(out,location=1,interval=0.95,years='one')
+# plot.annual(out,location=data.frame('Longitude' = -111.96, 'Latitude' = 41.06),years='one',add=T)
 
-# Intended Audience
+```
+
+
+
+# Intended Audience {.unnumbered}
 
 This document is intended to help even the most novice statistics student implement a fully Bayesian approach on spatially and temporally correlated data. Every function within the package is designed with this audience in mind. This document is meant to guide any potential user of this package through the basic theory and implementation of our models: in essence, it is an instruction manual. The bulk of this document contains examples of our functions applied on a real dataset.
 
 The outline is as follows. Section 1 introduces the motivation behind our Bayesian spatiotemporal factor analysis models and why fast computation is important. Section 2 outlines the available functions and procedures within the BSTFA package. Some basic theory and methodology are contained in Section 3, and Section 4 demonstrates the BSTFA package on simulated and real world data. The appendix details additional resources.
 
-# 1. Motivation
+# Motivation {.unnumbered}
 
-# 2. What is Implemented?
+<!-- Modeling environmental processes presents specific challenges and "has itself become a highly diverse effort". The modeling scheme must be catered towards solving the specific challenges presented by the data. Common challenges include accounting for dependencies in space and time, modeling known versus unknown trends, and understanding global versus local processes.  -->
+
+Consider for example the motivating data for the BSTFA package: a collection of temperature measurements across the state of Utah. The data were collected from May 1912 through January 2015 from 146 weather stations across the state. This environmental process (temperature change) exhibits some of the challenges common in environmental modeling; that is, the data show obvious spatial and temporal dependence, and not all influences are known and easy to include in a modeling scheme. 
+
+Take for example the mean-centered 30-day average of daily minimum temperature for 3 weather stations: Moab, Canyonlands National Park, and Logan. The Moab and Canyonlands stations are near one another (within 50 miles) while the Logan station is far away (300 miles). Figure \@ref(fig-utahTemps)
+shows these same temperature series zoomed in on the years 1999 to 2001. The difference between low temperatures in winter 2000 and winter 2001 is slight in Moab and the Canyonlands, but in Logan, the low temperature decreases dramatically from winter 2000 to winter 2001, showing that locations near each other in space exhibit similar environmental trends.
+
+We don't know from the data alone what caused that difference; we simply know it exists. We need a model that not only accounts for spatiotemporal dependence but provides some additional level of inference. Residual spatiotemporal factor analysis allows us to, after modeling known processes, account for the underlying spatiotemporal dependencies and provide numerical and visual summaries about that dependence. We can then make higher quality inference on the known processes of interest and add additional insight into the dependence structure.
+
+The typical Bayesian approach to spatiotemporal factor analysis is computationally burdensome. Our BSTFA package accounts for this using dimension reduction via basis functions, allowing for fast computation. The remainder of this paper describes the BSTFA package and its use of basis functions, as well as all implemented methods for plotting, prediction and inference.
+
+```{r, fig-utahTemps, echo=FALSE, fig.height=4, fig.width=10, fig.cap='Mean-centered 30-day average of daily minimum temperature for 3 Utah weather stations from 1999 to 2001. Notice that the drop from winter 2000 to winter 2001 is more similar for Moab and the Canyonlands (50 miles apart) than Logan (300 miles away from both).'}
+
+colnames(utahDataList$TemperatureVals) = utahDataList$Locations
+par(mfrow=c(1,3))
+window=1060:1090
+plot(y=utahDataList$TemperatureVals[window,which(utahDataList$Locations=='MOAB')],
+     x=utahDataList$Dates[window], type = 'l',
+     main = "Moab",
+     xlab = "",
+     ylab = "",
+     ylim=c(-18,23),
+     cex.main=1.5)
+plot(y=utahDataList$TemperatureVals[window,which(utahDataList$Locations=='CANYONLANDS.THE.NECK')],
+     x=utahDataList$Dates[window], type = 'l',
+     main = "Canyonlands",
+     xlab = "",
+     ylab = "",
+     ylim=c(-18,23),
+     cex.main=1.5)
+plot(y=utahDataList$TemperatureVals[window,utahDataList$Locations=='LOGAN.UTAH.ST.UNIV'], 
+     x=utahDataList$Dates[window], type = 'l',
+     main = "Logan",
+     xlab = "",
+     ylab = "",
+     ylim=c(-18,23),
+     cex.main=1.5)
+```
+
+
+
+# What is Implemented?
 
 ## BSTFA
 ## BSTFAfull
@@ -154,9 +196,9 @@ The outline is as follows. Section 1 introduces the motivation behind our Bayesi
 ## Plotting/Visualization
 ## Speed
 
-# 3. Methodology
+# Methodology
 
-# 4. Examples using BSTFA
+# Examples using BSTFA
 ## Utah
 
 # Appendices

@@ -1,16 +1,17 @@
 ### FIX ME ###
-### Model function STFA
+### STFA
 # Implement ... argument into function
 # Check default values for everything, comment on differences
 # Make n.load.bases and n.spatial.bases arguments make more sense for all basis styles
 # How do covariates work?
 
-### Model function specifically STFAfull
+### STFAfull
 # STFAfull - omega.bar.cur not working. Maybe adapt.iter needs to be > burn?
 # implement tps fully (STFAfull)
 
 ### Plotting functions
 # Implement "add=T" stuff into functions?
+# Implement a CI function
 
 ### Ideas?
 # S*alpha only for non-fixed locations?
@@ -19,9 +20,15 @@
 ### NOTES
 # tps changes n.load.bases and n.spatial.bases to floor(sqrt(n.load.bases))^2
 # n.temp.bases will automatically become even
-# I don't think we do uncertainty in plot.map or plot.annual since those are
+# I don't think we do uncertainty in alpha coefficients for plot.map or plot.annual since those are
   # plotting the MEAN of those processes.
   # We then get a CI around the MEAN slope,loading,seasonal,etc.
+  # This is plotting the expected value with a CI around the expected value of the parameter.
+  # It doesn't make sense to use a prediction interval when modeling the mean of a process.
+  # We're not drawing random processes from a distribution! Only the data are defined in that way,
+  # not the processes.
+  # Thus, we use PI (prediction intervals), which use variability in the data AND unknown processes,
+  # for locations which have no data.
 
 ### Questions
 # Show how package looks on github.

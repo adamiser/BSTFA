@@ -89,6 +89,7 @@ predictSTFA = function(out, location=NULL, type='mean',
                              mean=rep(0,nrow(location)*out$draws),
                              sd=sqrt(rep(c(out$tau2.mu),each=nrow(location)))),ncol=out$draws,byrow=TRUE)
     mupred <- mumean + muresid
+    # mupred <- mumean
     mulong = kronecker(Matrix::Diagonal(nrow(location)),
                        rep(1,out$n.times))%*%mupred
 
@@ -98,6 +99,7 @@ predictSTFA = function(out, location=NULL, type='mean',
                              mean=rep(0,nrow(location)*out$draws),
                              sd=sqrt(rep(c(out$tau2.beta),each=nrow(location)))),ncol=out$draws,byrow=TRUE)
     betapred <- betamean + betaresid
+    # betapred <- betamean
     betalong = kronecker(Matrix::Diagonal(nrow(location)),
                          out$model.matrices$linear.Tsub)%*%betapred
 
@@ -108,6 +110,7 @@ predictSTFA = function(out, location=NULL, type='mean',
                             mean=rep(0,nrow(location)*out$n.seasn.knots*out$draws),
                             sd=sqrt(rep(c(out$tau2.xi),each=nrow(location)*out$n.seasn.knots))),ncol=out$draws,byrow=TRUE)
     xipred <- ximean + xiresid
+    # xipred <- ximean
     xilong = kronecker(Matrix::Diagonal(nrow(location)),
                        out$model.matrices$seasonal.bs.basis)%*%xipred
 
@@ -147,6 +150,7 @@ predictSTFA = function(out, location=NULL, type='mean',
                               mean=rep(0,nrow(location)*out$n.factors),
                               sd=sqrt(rep(c(out$tau2.lambda[i,]),each=out$n.factors))),ncol=out$n.factors,byrow=TRUE)
       Lam[,,i] = Lammean + Lamresid
+      # Lam[,,i] = Lammean
     }
 
     # F (factor scores)
