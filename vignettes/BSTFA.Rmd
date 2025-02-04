@@ -19,10 +19,10 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r setup}
+```{r setup, echo=FALSE, include=FALSE}
+library(knitr)
 devtools::load_all()
 # library(BSTFA)
-
 ```
 
 
@@ -80,7 +80,7 @@ devtools::load_all()
 # plot.map(out,parameter='slope',location='utah',state=TRUE,map=TRUE,
 #          with.uncertainty = FALSE)
 # 
-# predictSTFA(out,location=data.frame('Longitude' = -111.96, 'Latitude' = 41.06))
+# predictBSTFA(out,location=data.frame('Longitude' = -111.96, 'Latitude' = 41.06),type='mean')
 # plot.location(out,location=10,truth=TRUE)
 # plot.location(out,location=data.frame('Longitude' = -111.96, 'Latitude' = 41.06))
 # 
@@ -91,16 +91,16 @@ devtools::load_all()
 ```{r, echo=FALSE, include=FALSE}
 # devtools::load_all()
 # 
-# out = STFA(iters=100,ymat=utahDataList$TemperatureVals,
+# out = BSTFA(iters=100,ymat=utahDataList$TemperatureVals,
 #            dates=utahDataList$Dates,
-#            coords=utahDataList$Coords,
+#            coords=as.matrix(utahDataList$Coords),
 #            factors.fixed = c(144,89,129,78), n.seasn.knots=7,
 #            spatial.style='fourier', load.style='fourier',
 #            n.load.bases = 8, n.spatial.bases = 12, n.temp.bases=126,
 #            verbose=FALSE, plot.factors=FALSE)
 # 
 # par(mfrow=c(1,1))
-# plot.location(out,1,xrange=c('1969-01-01', '1979-01-01'),truth = TRUE)
+# plot.location(out,1,xrange=c('1969-01-01', '1979-01-01'),truth = TRUE,pred.int=TRUE)
 # devtools::load_all()
 # 
 # preds1 = predictSTFA(out,location=1,type='ub')
@@ -110,7 +110,9 @@ devtools::load_all()
 # 
 # 
 # plot.location(out, location=data.frame('Longitude' = -111.96, 'Latitude' = 41.06),
-#          uncertainty=TRUE, xrange=c('1959-01-01', '1979-01-01'))
+#        uncertainty=TRUE, xrange=c('1959-01-01', '1979-01-01'), pred.int=TRUE)
+# plot.location(out, location=ttt,
+#           uncertainty=TRUE, xrange=c('1959-01-01', '1979-01-01'))
 # 
 # plot.grid(out,parameter='loadings',loadings=1)
 # plot.grid(out,parameter='slope')
@@ -143,7 +145,7 @@ devtools::load_all()
 
 This document is intended to help even the most novice statistics student implement a fully Bayesian approach on spatially and temporally correlated data. Every function within the package is designed with this audience in mind. This document is meant to guide any potential user of this package through the basic theory and implementation of our models: in essence, it is an instruction manual. The bulk of this document contains examples of our functions applied on a real dataset.
 
-The outline is as follows. Section 1 introduces the motivation behind our Bayesian spatiotemporal factor analysis models and why fast computation is important. Section 2 outlines the available functions and procedures within the BSTFA package. Some basic theory and methodology are contained in Section 3, and Section 4 demonstrates the BSTFA package on simulated and real world data. The appendix details additional resources.
+The outline is as follows. First, I introduce the motivation behind our Bayesian spatiotemporal factor analysis models and why fast computation is important. Section 1 outlines the available functions and procedures within the BSTFA package. Some basic theory and methodology are contained in Section 2, and Section 3 demonstrates the BSTFA package on simulated and real world data. The appendix details additional resources.
 
 # Motivation {.unnumbered}
 
@@ -151,8 +153,7 @@ The outline is as follows. Section 1 introduces the motivation behind our Bayesi
 
 Consider for example the motivating data for the BSTFA package: a collection of temperature measurements across the state of Utah. The data were collected from May 1912 through January 2015 from 146 weather stations across the state. This environmental process (temperature change) exhibits some of the challenges common in environmental modeling; that is, the data show obvious spatial and temporal dependence, and not all influences are known and easy to include in a modeling scheme. 
 
-Take for example the mean-centered 30-day average of daily minimum temperature for 3 weather stations: Moab, Canyonlands National Park, and Logan. The Moab and Canyonlands stations are near one another (within 50 miles) while the Logan station is far away (300 miles). Figure \@ref(fig-utahTemps)
-shows these same temperature series zoomed in on the years 1999 to 2001. The difference between low temperatures in winter 2000 and winter 2001 is slight in Moab and the Canyonlands, but in Logan, the low temperature decreases dramatically from winter 2000 to winter 2001, showing that locations near each other in space exhibit similar environmental trends.
+Take for example the mean-centered 30-day average of daily minimum temperature for 3 weather stations: Moab, Canyonlands National Park, and Logan. The Moab and Canyonlands stations are near one another (within 50 miles) while the Logan station is far away (300 miles). Figure 0.1 shows these same temperature series zoomed in on the years 1999 to 2001. The difference between low temperatures in winter 2000 and winter 2001 is slight in Moab and the Canyonlands, but in Logan, the low temperature decreases dramatically from winter 2000 to winter 2001, showing that locations near each other in space exhibit similar environmental trends.
 
 We don't know from the data alone what caused that difference; we simply know it exists. We need a model that not only accounts for spatiotemporal dependence but provides some additional level of inference. Residual spatiotemporal factor analysis allows us to, after modeling known processes, account for the underlying spatiotemporal dependencies and provide numerical and visual summaries about that dependence. We can then make higher quality inference on the known processes of interest and add additional insight into the dependence structure.
 
@@ -162,7 +163,7 @@ The typical Bayesian approach to spatiotemporal factor analysis is computational
 
 colnames(utahDataList$TemperatureVals) = utahDataList$Locations
 par(mfrow=c(1,3))
-window=1060:1090
+window=1050:1090
 plot(y=utahDataList$TemperatureVals[window,which(utahDataList$Locations=='MOAB')],
      x=utahDataList$Dates[window], type = 'l',
      main = "Moab",
@@ -190,11 +191,107 @@ plot(y=utahDataList$TemperatureVals[window,utahDataList$Locations=='LOGAN.UTAH.S
 
 # What is Implemented?
 
-## BSTFA
-## BSTFAfull
+The BSTFA package contains implementation of two spatiotemporal factor analysis models along with functions for prediction, plotting and visualizing posterior surfaces. The model fitting functions are defined in Section 1.1, while the methodology associated with these models is described more fully in Section 2. The BSTFA package prediction methods are discussed in Section 1.2, functions for plotting/visualization are described in Section 1.3, and notes about computational speed are outlined in Section 1.4. 
+
+While each of these sections describes some arguments to the functions, the best way to understand all available function arguments is to look at the R help documentation (for instance, running ?BSTFA in your R console).
+
+## Model-fitting Functions
+
+The BSTFA package contains 2 model fitting functions: BSTFA, our proposed computationally-efficient spatiotemporal factor analysis model using basis functions for factor analysis, and BSTFAfull, the slower spatiotemporal factor analysis model using Gaussian Processes for factor analysis. The specific theory and model specification of both functions is described in Section 2.
+
+Both functions return a list object containing all information required to summarize posterior inference, including all posterior draws from each parameter (the amount is specified by the $\textit{iters}$, $\textit{burn}$ and $\textit{thin}$ arguments), matrices containing the basis functions, and information about computation time. Each function has only 3 required arguments, summarized in Table 1.1. Other arguments relating to model fitting and prior specification will be discussed more fully in Section 2.
+
+```{r, tab-args, echo=FALSE}
+data <- data.frame(
+  Argument = c("ymat", "dates", "coords"),
+  Description = c("A matrix of response values. Each row should represent a point in time, and each column should represent a specific location.", "A vector of dates of length nrow(ymat). The model functions will transform this vector into doy (days of year) using lubridate::yday(). Thus, this vector must either be a lubridate or string object with at least month/day information, but year-month-day format is preferrable.", "A matrix/dataframe of coordinate values with 2 columns and number of rows equal to ncol(ymat). If using longitude/latitude, longitude should be the first column.")
+)
+
+knitr::kable(data, caption = "Table of Required Arguments")
+```
+
 ## Prediction
+
+The function predictBSTFA takes as its first argument the output from the BSTFA or BSTFAfull functions. Within the function, posterior samples from relevant parameters are used to generate predictions either for $Y(\mathbf{s}, t)$ at observed location $\mathbf{s}$ and time $t$, or for $Y(\mathbf{s^*}, t)$ at unobserved location $\mathbf{s^*}$ at time $t$.
+
+The function also takes as input either a location number (corresponding to the appropriate column of your \textit{ymat} argument) for predicting at an observed location or a matrix/dataframe of coordinate values if predicting at a new location. The function can either return a matrix of all predictions with dimensions equal to the number of time points (rows) and number of posterior draws (columns), or a vector with length equal to the number of time points containing either the posterior mean, median, or an $(\alpha*100) \%$ upper or lower credible/prediction interval bound. When predicting $Y(\mathbf{s}, t)$, residual error is added to create prediction intervals using the overall variance parameter $\sigma^2$, while when predicting $Y(\mathbf{s^*}, t)$, added variance is accounted for within each element of the model to create prediction intervals in addition to overall residual error. When creating credible intervals, the overall variance parameter $\sigma^2$ is not used in either case.
+
+This function is used within the plot.location function (discussed in Section 1.3) but can also be used on its own.
+
 ## Plotting/Visualization
+
+The BSTFA package contains multiple functions for plotting and visualizing the model output. Of course, all of these can be implemented on your own (the output from the BSTFA or BSTFAfull functions contain all posterior draws and basis function matrices), but these functions exist for quick plotting and visualization of posterior distributions. Some functions utilize base R for plotting while others use the $\textit{ggplot2}$ package. Table 1.2 below displays a table with each plotting function and a basic description. 
+
+```{r, tab-functions, echo=FALSE}
+data <- data.frame(
+  Function = c("plot.location", "plot.annual", "plot.grid", "plot.map", "plot.factor"),
+  Description = c("Plot predicted response at a specific location (either observed or unobserved) for a specified time range. Credible or prediction interval bands of a specified size can be included. Uses base R for plotting.",
+                  "Plot the predicted seasonal trend at a specific location (either observed or unobserved). Credible interval bands of a specified size can be included. Uses base R for plotting.",
+                  "Plot the predicted spatially-dependent mean, linear slope, or specific factor loading (the user specifies the parameter of interest) at all observed locations. Credible interval bounds of a specified size can also be plotted. Uses ggplot2 for plotting.",
+                  "Plot the predicted spatially-dependent mean, linear slope, or specific factor loading (the user specifies the parameter of interest) at a grid of unobserved locations using basis function interpolation. Credible interval bounds of a specified size can also be plotted. Contains arguments to import and plot the grid on a map using functions from the sf package. Uses ggplot2 for plotting.",
+                  "Plot the predicted factors, either individually or all together. Credible interval bands of a specified size can be included. Uses base R for plotting.")
+)
+
+knitr::kable(data, caption = "Table of Plotting/Visualization Functions")
+```
+
+Examples of these functions used on the Utah temperature data set are available in Section 3.
+
 ## Speed
+
+As mentioned before, the BSTFA package takes advantage of various mathematical and coding shortcuts to speed up computation. A slow Bayesian sampler can reach the point of being unusable, especially for students simply looking to explore Bayesian algorithms and modeling. This is true both for model fitting and posterior predictive inference; if either is slow, the package becomes less usable. Thus, a main focus in creating this package was based on reducing the computational burden of spatio-temporal factor analysis.
+
+### Sparse Matrices
+
+The first method involved transforming matrix objects with lots of zero elements into "sparse" matrices using the $\textit{Matrix}$ package in R. Modeling space-time data inevitably involves kronecker products, resulting in matrices upwards of dimension $nt \times nt$, where $n$ represents the number of locations and $t$ represents the number of time points per location. These matrices are quite large for most space-time datasets. Fortunately, many elements (in fact, most) of these matrices are zero. The package $\textit{Matrix}$ implements various sparse matrix classes that store only nonzero values. Examples of these classes include $\textit{dgCMatrix}$, which stores only nonzero values column-wise, and $\textit{dsCMatrix}$, which stores only the lower (or upper) triangle of a symmetric matrix. Converting appropriate matrices to these classes reduces memory usage and enabling faster matrix multiplication and inversion. In most instances, the BSTFA package creates the large matrix (i.e., via kronecker product), then turns that matrix into a sparse matrix class using the $\textit{as}$ function. This can be seen in the code chunk below, used in the BSTFA and BSTFAfull functions for creating the temporal coefficient $(I_n \otimes \mathbf{T_{sub}})$, where $\mathbf{T_{sub}}$ is the zero-centered vector of times.
+
+```{r, eval=FALSE}
+n.times <- 100
+n.locs <- 50
+Tsub <- -(n.times/2-0.5):(n.times/2-0.5)
+Tfull <- kronecker(Matrix::Diagonal(n=n.locs,x=1), Tsub)
+ItTT <- as(kronecker(Matrix::Diagonal(n=n.locs,x=1), t(Tsub)%*%Tsub), "sparseMatrix")
+```
+
+The $\textit{Matrix}$ package contains other useful functions, such as $\textit{Diagonal}$ which creates a diagonal matrix with the sparse matrix class $\textit{ddiMatrix}$. Also, the $\textit{Matrix}$ package implements all typical matrix operations in R (such as multiplication $%*%$, transpose $t()$, and inversion $solve()$) for sparse Matrix objects. It is surprising how much time can be saved by taking advantage of efficient memory usage via the $\textit{Matrix}$ in a Bayesian sampler full of large matrices.
+
+### Vec Operator Shortcuts
+
+Another method for reducing computation time comes from simplifying mathematical formulas. When performing any type of multivariate regression (which, in most cases, includes space-time data), the $vec$ operator is used to transform the say $n \times t$ matrix of response values $Y$ into the $nt \times 1$ vector $vec(Y)$. $vec(Y)$ can then follow a multivariate Gaussian distribution, and so forth. There is a property of the $vec$ operator that can at times speed up computation in R; namely, if $A$, $X$ and $B$ are matrices with dimensions that enable $AXB$ to be a proper operation, 
+$$
+\text{vec}(AXB) = (B' \otimes A) \text{vec}(X) \\
+\text{and} \\
+\text{vec}(AB) = (I \otimes A) \text{vec}(B) = (B' \otimes I) \text{vec}(A).
+$$
+This property comes up a lot in a Bayesian sampler for multivariate data, especially when deriving appropriate conditionally-conjugate distributions (discussed later). In some instances, computing the left hand side is faster than the right hand side because less memory is required, and in other instances, computing the right hand side is faster than the left hand side when utilizing sparse matrices. One example in the BSTFA function comes when sampling the basis coefficients $\alpha_T$ of the factors from the full conditional distribution $\alpha_T | \star$ (for specific information about methodology, see Section 2). The mean of the full conditional distribution, using the property above, is
+$$
+\mathbf{\mu_{\alpha_T}} = \frac{1}{\sigma^2}\mathbf{\Sigma_{\alpha_T}} \text{vec}(\mathbf{Q_T}' \mathbf{Y} \mathbf{\Lambda}) = \frac{1}{\sigma^2}\mathbf{\Sigma_{\alpha_T}} (\mathbf{\Lambda}' \otimes \mathbf{Q_T}')\text{vec}(\mathbf{Y}).
+$$
+After repeated testing, it was clear that the left hand side was faster computationally than the right hand side (though that is not the case in every instance). Thus, the code to compute this mean within the Bayesian sampler is as follows:
+```{r, eval=FALSE}
+alphaT.mean <- (1/sig2)*alphaT.var%*%matrixcalc::vec(t(QT)%*%Ymat%*%Lambda)
+```
+$\textbf{Note:}$ the concatenate function in R $\textit{c()}$ performs the same operation as the $\textit{vec()}$ function from the $\textit{matrixcalc}$ package (that is, it stacks columns of a matrix), but $\textit{c()}$ does not return an object of class $matrix$ while $\textit{vec()}$ does. This makes operations such as matrix multiplication and the $\textit{dim()}$ function reliable and usable.
+
+### Basis Functions and Conditional Conjugacy
+
+Both of the computational improvements listed above are implemented in both the BSTFA and BSTFAfull functions. So why is BSTFA still so much faster than BSTFAfull? The reason is methodological. The details are covered in greater detail in Section 2, so here I supply a short answer. Both BSTFA and BSTFAfull model every component the same except for the factor analysis portion. In BSTFAfull, we model the factors using a vector autoregressive approach and the factor loadings with an exponential spatial dependence structure. This causes three main computational issues:
+
+- The autoregressive step requires looping through all time points, with each point requiring matrix inversion and multiplication. This process can be sped up in C++, but even that takes too long in a Bayesian sampler when $t$ gets remotely large (around 100 time points). 
+
+- Estimating the exponential spatial dependence structure for the loadings requires inversion of large, sometimes dense matrices (of the order $nt \times nt$) in every iteration of the sampler. 
+
+- Estimating certain parameters in this framework (namely the correlation matrix of the factors $\mathbf{\Omega}$ and the range parameter of the exponential covariance structure $\mathbf{\phi}$) require MCMC methods such as the Metropolis-Hastings algorithm to generate posterior draws. Any MCMC step introduces increased computation time and potential inefficiency.
+
+The BSTFA function instead fits both the factors and the factor loadings using basis functions of various forms, as discussed in Section 2. This solves the problems mentioned above by:
+
+- Removing the need for a vector autoregressive loop.
+
+- Lowering the dimension of the previously-large matrices.
+
+- Introducing conjugacy. The entire model used in the BSTFA function is conditionally conjugate, allowing for an efficient Gibbs sampler without needing to use any MCMC steps.
+
+INFORMATION ABOUT HOW MUCH TIME IS SAVED
 
 # Methodology
 

@@ -4,7 +4,14 @@
 \alias{plot.grid}
 \title{Plot on a grid}
 \usage{
-\method{plot}{grid}(out, parameter, loadings = 1, type = "mean", ci.level = c(0.025, 0.975))
+\method{plot}{grid}(
+  out,
+  parameter,
+  loadings = 1,
+  type = "mean",
+  ci.level = c(0.025, 0.975),
+  color.gradient = colorRampPalette(rev(RColorBrewer::brewer.pal(9, name = "RdBu")))(50)
+)
 }
 \arguments{
 \item{out}{output from STFA or STFAfull}

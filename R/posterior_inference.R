@@ -5,9 +5,9 @@
 #' Prediction
 #' @param out output from STFA or STFAfull
 #' @importFrom npreg basis.tps
-#' @export predictSTFA
-predictSTFA = function(out, location=NULL, type='mean',
-                       ci.level = c(0.025, 0.975), new_x=NULL) {
+#' @export predictBSTFA
+predictBSTFA = function(out, location=NULL, type='mean',
+                       ci.level = c(0.025, 0.975), new_x=NULL, pred.int=TRUE) {
 
   # FIX ME - do useful functions like bisquare still work?
 
@@ -36,15 +36,21 @@ predictSTFA = function(out, location=NULL, type='mean',
       facts[,i] <- c(matrix(out$PFmat[i,],nrow=out$n.times,ncol=out$n.factors,byrow=FALSE)%*%t(matrix(out$Lambda[i,lam.seq],nrow=length(location),ncol=out$n.factors,byrow=TRUE)))
     }
 
-    resid = matrix(rnorm(out$draws*out$n.times,
-                         mean=rep(0,out$draws*out$n.times),
-                         sd=sqrt(rep(c(out$sig2),each=out$n.times))),ncol=out$draws,byrow=TRUE)
 
-    ypreds = kronecker(diag(length(location)), rep(1,out$n.times))%*%matrix(t(out$mu)[location,],nrow=length(location)) +
-      kronecker(diag(length(location)), out$model.matrices$linear.Tsub)%*%matrix(t(out$beta)[location,],nrow=length(location)) +
-      kronecker(diag(length(location)), out$model.matrices$seasonal.bs.basis)%*%t(out$xi)[xi.seq,] +
-      facts +
-      resid
+    if (pred.int) {
+      resid = matrix(rnorm(out$draws*out$n.times,
+                           mean=rep(0,out$draws*out$n.times),
+                           sd=sqrt(rep(c(out$sig2),each=out$n.times))),ncol=out$draws,byrow=TRUE)
+      ypreds = kronecker(diag(length(location)), rep(1,out$n.times))%*%matrix(t(out$mu)[location,],nrow=length(location)) +
+        kronecker(diag(length(location)), out$model.matrices$linear.Tsub)%*%matrix(t(out$beta)[location,],nrow=length(location)) +
+        kronecker(diag(length(location)), out$model.matrices$seasonal.bs.basis)%*%t(out$xi)[xi.seq,] +
+        facts + resid
+    } else {
+      ypreds = kronecker(diag(length(location)), rep(1,out$n.times))%*%matrix(t(out$mu)[location,],nrow=length(location)) +
+        kronecker(diag(length(location)), out$model.matrices$linear.Tsub)%*%matrix(t(out$beta)[location,],nrow=length(location)) +
+        kronecker(diag(length(location)), out$model.matrices$seasonal.bs.basis)%*%t(out$xi)[xi.seq,] +
+        facts
+    }
 
   } else if (length(dim(location))>1) { # predict at a new location (coordinates should have given to location)
 
@@ -159,11 +165,14 @@ predictSTFA = function(out, location=NULL, type='mean',
       facts[,,i] = matrix(out$PFmat[i,],nrow=out$n.times,ncol=out$n.factors)%*%matrix(t(Lam[,,i]),nrow=out$n.factors,ncol=nrow(location))
     }
 
-    resid = matrix(rnorm(out$draws*out$n.times,
-                         mean=rep(0,out$draws*out$n.times),
-                         sd=sqrt(rep(c(out$sig2),each=out$n.times))),ncol=out$draws,byrow=TRUE)
-
-    ypreds = mulong + betalong + xilong + matrix(facts, nrow=out$n.times*nrow(location), ncol=out$draws) + resid
+    if (pred.int) {
+      resid = matrix(rnorm(out$draws*out$n.times,
+                           mean=rep(0,out$draws*out$n.times),
+                           sd=sqrt(rep(c(out$sig2),each=out$n.times))),ncol=out$draws,byrow=TRUE)
+      ypreds = mulong + betalong + xilong + matrix(facts, nrow=out$n.times*nrow(location), ncol=out$draws) + resid
+    } else {
+      ypreds = mulong + betalong + xilong + matrix(facts, nrow=out$n.times*nrow(location), ncol=out$draws)
+    }
 
   }
 
@@ -193,18 +202,20 @@ predictSTFA = function(out, location=NULL, type='mean',
 #' @param out output from STFA or STFAfull
 #' @export plot.location
 plot.location = function(out, location, new_x=NULL,
-                         type='mean', par.mfrow=c(1,1),
+                         type='mean', par.mfrow=c(1,1), pred.int=TRUE,
                          ci.level = c(0.025, 0.975),
                          uncertainty=TRUE, xrange=NULL, truth=FALSE) {
 
-  ypreds = predictSTFA(out, location=location, type=type, new_x=new_x)
+  ypreds = predictBSTFA(out, location=location, type=type, new_x=new_x, pred.int=pred.int)
   if (uncertainty) {
-    ypreds.lb = predictSTFA(out, location=location, type='lb',
+    ypreds.lb = predictBSTFA(out, location=location, type='lb',
                             new_x=new_x,
-                            ci.level=ci.level)
-    ypreds.ub = predictSTFA(out, location=location, type='ub',
+                            ci.level=ci.level,
+                            pred.int=pred.int)
+    ypreds.ub = predictBSTFA(out, location=location, type='ub',
                             new_x=new_x,
-                            ci.level=ci.level)
+                            ci.level=ci.level,
+                            pred.int=pred.int)
   }
 
   if (is.null(dim(location))) n.col=length(location)

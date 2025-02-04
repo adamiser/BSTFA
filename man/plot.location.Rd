@@ -10,6 +10,7 @@
   new_x = NULL,
   type = "mean",
   par.mfrow = c(1, 1),
+  pred.int = TRUE,
   ci.level = c(0.025, 0.975),
   uncertainty = TRUE,
   xrange = NULL,

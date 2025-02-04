@@ -4,7 +4,15 @@
 \alias{plot.annual}
 \title{Plot annual curve}
 \usage{
-\method{plot}{annual}(out, location, add = F, years = "one", interval = 0.95, yrange = NULL)
+\method{plot}{annual}(
+  out,
+  location,
+  add = F,
+  years = "one",
+  interval = 0.95,
+  yrange = NULL,
+  new_x = NULL
+)
 }
 \arguments{
 \item{out}{output from STFA or STFAfull}

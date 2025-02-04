@@ -9,8 +9,8 @@
 #' @importFrom MASS mvrnorm
 #' @importFrom npreg basis.tps
 #' @import Matrix
-#' @export STFAfull
-STFAfull <- function(ymat, dates, n.times=nrow(ymat), n.locs=ncol(ymat), coords, iters, x=NULL,
+#' @export BSTFAfull
+BSTFAfull <- function(ymat, dates, n.times=nrow(ymat), n.locs=ncol(ymat), coords, iters=10000, x=NULL,
                      mean=FALSE, linear=TRUE, seasonal=TRUE, factors=TRUE,
                      n.seasn.knots=7, n.spatial.bases=ceiling(n.locs/2), n.factors=min(4,ceiling(n.locs/20)), factors.fixed=NULL, plot.factors=TRUE,
                      knot.levels=2, max.knot.dist=n.locs*0.05, premade.knots=NULL, plot.knots=TRUE, spatial.style='grid',

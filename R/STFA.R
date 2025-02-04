@@ -1,17 +1,21 @@
 ### FIX ME ###
-### STFA
+### BSTFA
 # Implement ... argument into function
 # Check default values for everything, comment on differences
 # Make n.load.bases and n.spatial.bases arguments make more sense for all basis styles
 # How do covariates work?
+# Make sure "dates" object can be a string OR lubridate object already
+# Make sure coordinate order doesn't matter.
 
-### STFAfull
-# STFAfull - omega.bar.cur not working. Maybe adapt.iter needs to be > burn?
-# implement tps fully (STFAfull)
+### BSTFAfull
+# BSTFAfull - omega.bar.cur not working. Maybe adapt.iter needs to be > burn?
+# implement tps fully (BSTFAfull)
 
 ### Plotting functions
 # Implement "add=T" stuff into functions?
-# Implement a CI function
+# Implement a CI vs PI argument
+# Edit "predict at all known locations" option in predictBSTFA
+# Include CI bands in plot.factor
 
 ### Ideas?
 # S*alpha only for non-fixed locations?
@@ -39,9 +43,9 @@
 
 
 
-##### STFA FUNCTION - FA Reduction built in #####
+##### BSTFA FUNCTION - FA Reduction built in #####
 
-#' Reduced STFA function
+#' Reduced BSTFA function
 #' @param ymat data
 #' @importFrom matrixcalc vec
 #' @importFrom mgcv cSplineDes
@@ -50,8 +54,8 @@
 #' @importFrom MASS mvrnorm
 #' @importFrom npreg basis.tps
 #' @import Matrix
-#' @export STFA
-STFA <- function(ymat, dates, coords,
+#' @export BSTFA
+BSTFA <- function(ymat, dates, coords,
                  iters=10000, n.times=nrow(ymat), n.locs=ncol(ymat), x=NULL,
                  mean=FALSE, linear=TRUE, seasonal=TRUE, factors=TRUE,
                  n.seasn.knots=7,
@@ -68,7 +72,7 @@ STFA <- function(ymat, dates, coords,
                  alpha.prec=1/100000, tau2.gamma=2, tau2.phi=0.0000001, sig2.gamma=2, sig2.phi=1e-5,
                  sig2=as.vector(var(y)), beta=NULL, xi=NULL,
                  Fmat=matrix(0,nrow=n.times,ncol=n.factors), Lambda=matrix(0,nrow=n.locs, n.factors),
-                 thin=1, burn=iters*0.5, verbose=TRUE, filename='STFA.Rdata', save.missing=FALSE) {
+                 thin=1, burn=iters*0.5, verbose=TRUE, filename='BSTFA.Rdata', save.missing=FALSE) {
 
   start <- Sys.time()
 
@@ -190,8 +194,8 @@ STFA <- function(ymat, dates, coords,
   if (linear == TRUE) {
     Tsub <- -(n.times/2-0.5):(n.times/2-0.5)
     Tfull <- kronecker(Matrix::Diagonal(n=n.locs), Tsub)
-    ItTT <- as(kronecker(diag(1,n.locs), t(Tsub)%*%Tsub), "sparseMatrix")
-    ItT <- as(kronecker(diag(1,n.locs), t(Tsub)), "sparseMatrix")
+    ItTT <- as(kronecker(Matrix::Diagonal(n=n.locs), t(Tsub)%*%Tsub), "sparseMatrix")
+    ItT <- as(kronecker(Matrix::Diagonal(n=n.locs), t(Tsub)), "sparseMatrix")
     if(is.null(beta)==T){
       beta.var <- solve(ItTT)
       beta.mean <- beta.var%*%ItT%*%y #starting values for beta
