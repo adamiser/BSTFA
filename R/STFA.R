@@ -72,7 +72,8 @@ BSTFA <- function(ymat, dates, coords,
                  alpha.prec=1/100000, tau2.gamma=2, tau2.phi=0.0000001, sig2.gamma=2, sig2.phi=1e-5,
                  sig2=as.vector(var(y)), beta=NULL, xi=NULL,
                  Fmat=matrix(0,nrow=n.times,ncol=n.factors), Lambda=matrix(0,nrow=n.locs, n.factors),
-                 thin=1, burn=iters*0.5, verbose=TRUE, filename='BSTFA.Rdata', save.missing=FALSE) {
+                 thin=1, burn=iters*0.5, verbose=TRUE, filename='BSTFA.Rdata', save.missing=FALSE,
+                 save.output=FALSE) {
 
   start <- Sys.time()
 
@@ -770,7 +771,7 @@ BSTFA <- function(ymat, dates, coords,
                 "n.load.bases" = n.load.bases,
                 "draws" = dim(coda::as.mcmc(t(beta.save)))[1])
 
-  save(output, file=filename)
+  if (save.output = TRUE) save(output, file=filename)
 
   output
 
