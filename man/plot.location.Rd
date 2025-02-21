@@ -14,7 +14,8 @@
   ci.level = c(0.025, 0.975),
   uncertainty = TRUE,
   xrange = NULL,
-  truth = FALSE
+  truth = FALSE,
+  ylim = NULL
 )
 }
 \arguments{

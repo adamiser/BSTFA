@@ -9,6 +9,8 @@
 #' @importFrom MASS mvrnorm
 #' @importFrom npreg basis.tps
 #' @import Matrix
+#' @import Rcpp
+#' @import RcppArmadillo
 #' @export BSTFAfull
 BSTFAfull <- function(ymat, dates, n.times=nrow(ymat), n.locs=ncol(ymat), coords, iters=10000, x=NULL,
                      mean=FALSE, linear=TRUE, seasonal=TRUE, factors=TRUE,
@@ -31,18 +33,18 @@ BSTFAfull <- function(ymat, dates, n.times=nrow(ymat), n.locs=ncol(ymat), coords
   start <- Sys.time()
 
   ### Necessary libraries
-  require(MASS)
-  require(ggplot2)
-  require(Matrix)
-  require(matrixcalc)
-  require(splines)
-  require(mgcv)
-  require(MCMCpack) # rwish
-  require(coda)
-  source('usefulFunctions.R')
-  require(Rcpp)
-  require(RcppArmadillo)
-  sourceCpp('SampleFactorsOriginal.cpp')
+  # require(MASS)
+  # require(ggplot2)
+  # require(Matrix)
+  # require(matrixcalc)
+  # require(splines)
+  # require(mgcv)
+  # require(MCMCpack) # rwish
+  # require(coda)
+  # source('usefulFunctions.R')
+  # require(Rcpp)
+  # require(RcppArmadillo)
+  # sourceCpp('SampleFactorsOriginal.cpp')
 
   par(mfrow=c(1,1))
 

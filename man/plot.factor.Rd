@@ -10,7 +10,8 @@
   together = FALSE,
   include.legend = TRUE,
   type = "mean",
-  ci.level = c(0.025, 0.975)
+  ci.level = c(0.025, 0.975),
+  xrange = NULL
 )
 }
 \arguments{

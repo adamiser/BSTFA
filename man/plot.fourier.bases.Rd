@@ -6,11 +6,11 @@
 \usage{
 \method{plot}{fourier.bases}(
   coords,
-  nB,
+  R,
   fine = 100,
   plot.3d = FALSE,
-  freq.lon = (max(coords[, 1]) - min(coords[, 1]))^2,
-  freq.lat = (max(coords[, 2]) - min(coords[, 2]))^2,
+  freq.lon = diff(range(coords[, 1]))^2,
+  freq.lat = diff(range(coords[, 2]))^2,
   par.mfrow = c(2, 3)
 )
 }

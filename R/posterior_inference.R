@@ -10,6 +10,7 @@ predictBSTFA = function(out, location=NULL, type='mean',
                        ci.level = c(0.025, 0.975), new_x=NULL, pred.int=TRUE) {
 
   # FIX ME - do useful functions like bisquare still work?
+  # FIX ME - add resid to "predict all locations"
 
   if (is.null(location)) { # predict for all observed locations
     facts <- matrix(0, ncol=out$draws, nrow=out$n.times*out$n.locs)
@@ -35,8 +36,6 @@ predictBSTFA = function(out, location=NULL, type='mean',
     for(i in 1:out$draws){
       facts[,i] <- c(matrix(out$PFmat[i,],nrow=out$n.times,ncol=out$n.factors,byrow=FALSE)%*%t(matrix(out$Lambda[i,lam.seq],nrow=length(location),ncol=out$n.factors,byrow=TRUE)))
     }
-
-
     if (pred.int) {
       resid = matrix(rnorm(out$draws*out$n.times,
                            mean=rep(0,out$draws*out$n.times),
@@ -204,7 +203,8 @@ predictBSTFA = function(out, location=NULL, type='mean',
 plot.location = function(out, location, new_x=NULL,
                          type='mean', par.mfrow=c(1,1), pred.int=TRUE,
                          ci.level = c(0.025, 0.975),
-                         uncertainty=TRUE, xrange=NULL, truth=FALSE) {
+                         uncertainty=TRUE, xrange=NULL, truth=FALSE,
+                         ylim=NULL) {
 
   ypreds = predictBSTFA(out, location=location, type=type, new_x=new_x, pred.int=pred.int)
   if (uncertainty) {
@@ -233,8 +233,16 @@ plot.location = function(out, location, new_x=NULL,
   par(mfrow=par.mfrow)
 
   for (i in 1:n.col) {
-    if (uncertainty) ylim = range(c(ymat.preds.ub[,i], ymat.preds.lb[,i]))
-    else ylim = range(ymat.preds[,i])
+    if (is.null(ylim)) {
+      if (uncertainty) {
+        if (truth) ylim = range(c(ymat.preds.ub[,i], ymat.preds.lb[,i], out$ymat[,location]),na.rm=TRUE)
+        else ylim = range(c(ymat.preds.ub[,i], ymat.preds.lb[,i]))
+      }
+      else {
+        if (truth) ylim = range(c(ymat.preds[,i], out$ymat[,location]),na.rm=TRUE)
+        else ylim = range(ymat.preds[,i])
+      }
+    }
     plot(y=ymat.preds[xlims,i],
          x=out$dates[xlims],
          type='l',
@@ -638,7 +646,8 @@ plot.map = function(out, parameter='slope', yearscale=TRUE, new_x=NULL,
 #' @param out output from STFA or STFAfull
 #' @export plot.factor
 plot.factor = function(out, factor=1, together=FALSE, include.legend=TRUE,
-                       type='mean', ci.level=c(0.025, 0.975)) {
+                       type='mean', ci.level=c(0.025, 0.975),
+                       xrange=NULL) {
 
   par(mfrow=c(1,1))
 
@@ -647,16 +656,25 @@ plot.factor = function(out, factor=1, together=FALSE, include.legend=TRUE,
   if (type=='lb') PFmat = matrix(apply(out$PFmat,2,quantile,prob=ci.level[1]),nrow=out$n.times,ncol=out$n.factors,byrow=FALSE)
   if (type=='ub') PFmat = matrix(apply(out$PFmat,2,quantile,prob=ci.level[1]),nrow=out$n.times,ncol=out$n.factors,byrow=FALSE)
 
+  if (is.null(xrange)) xlims=1:out$n.times
+  else xlims=which(out$dates > xrange[1] & out$dates < xrange[2])
   if (together) {
-    plot(y=PFmat[,1], x=out$dates, type='l', main = ('All Factors'),
+    plot(y=PFmat[xlims,1], x=out$dates[xlims], type='l', main = ('All Factors'),
          xlab = 'Time', ylab='Value', col=1,
-         #ylim=range(PFmat))
-         ylim=c(-7,7)) # FIX ME
+         ylim=range(PFmat))
+         # ylim=c(-3,5))
     for (i in 2:out$n.factors) {
       lines(y=PFmat[,i], x=out$dates, type='l', col=i)
     }
     if (include.legend) {
-      legend("topleft", legend=paste("Factor", seq(1,out$n.factors)), col = seq(1,out$n.factors), lty=1)
+      legend("topleft",
+             legend=paste("Factor", seq(1,out$n.factors)),
+             # legend=c("Wendover","Moab","St. George","Logan/USU"),
+             col = seq(1,out$n.factors),
+             lty=1,
+             lwd=2,
+             xpd=TRUE,
+             inset=c(0.2,0))
     }
 
   }

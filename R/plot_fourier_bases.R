@@ -2,27 +2,25 @@
 
 #' Visualize fourier bases
 #' @param out output from STFA or STFAfull
+#' @importFrom scatterplot3d scatterplot3d
 #' @export plot.fourier.bases
-plot.fourier.bases = function(coords, nB, fine=100, plot.3d=FALSE,
-                              freq.lon=(max(coords[,1])-min(coords[,1]))^2,
-                              freq.lat=(max(coords[,2])-min(coords[,2]))^2,
+plot.fourier.bases = function(coords, R, fine=100, plot.3d=FALSE,
+                              freq.lon=diff(range(coords[,1]))^2,
+                              freq.lat=diff(range(coords[,2]))^2,
                               par.mfrow=c(2,3)) {
-  require(scatterplot3d)
-  require(ggplot2)
-  require(RColorBrewer)
 
-  print(paste("Freq.lon =", freq.lon))
-  print(paste("Freq.lat =", freq.lat))
+  # print(paste("Freq.lon =", freq.lon))
+  # print(paste("Freq.lat =", freq.lat))
   predgrid <- expand.grid(seq(min(coords[,1]),
                               max(coords[,1]), length=fine),
                           seq(min(coords[,2]),
                               max(coords[,2]), length=fine))
-  m.fft.lon <- sapply(1:(nB/2), function(k) {
+  m.fft.lon <- sapply(1:(R/2), function(k) {
     sin_term <- sin(2 * pi * k * (predgrid[,1])/freq.lon)
     cos_term <- cos(2 * pi * k * (predgrid[,1])/freq.lon)
     cbind(sin_term, cos_term)
   })
-  m.fft.lat <- sapply(1:(nB/2), function(k) {
+  m.fft.lat <- sapply(1:(R/2), function(k) {
     sin_term <- sin(2 * pi * k * (predgrid[,2])/freq.lat)
     cos_term <- cos(2 * pi * k * (predgrid[,2])/freq.lat)
     cbind(sin_term, cos_term)
@@ -32,12 +30,12 @@ plot.fourier.bases = function(coords, nB, fine=100, plot.3d=FALSE,
   S = Slon*Slat
   par(mfrow=par.mfrow)
 
-  # ints = rep(seq(1,(nB/2)), length.out=nB)
-  ints = c(seq(1,nB,by=2),seq(2,nB,by=2))
+  # ints = rep(seq(1,(R/2)), length.out=R)
+  ints = c(seq(1,R,by=2),seq(2,R,by=2))
   if (plot.3d==TRUE) {
     for (i in 1:ncol(S)) {
       tt = ifelse(i > 0.5*ncol(S), "Cosine", "Sine")
-      scatterplot3d(predgrid[,1], predgrid[,2], S[,i],
+      scatterplot3d::scatterplot3d(predgrid[,1], predgrid[,2], S[,i],
                     #main=paste("Basis", tt, ints[i]),
                     main=paste("r =", ints[i]),
                     xlab="", ylab="", zlab="",

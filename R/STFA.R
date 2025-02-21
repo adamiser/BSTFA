@@ -6,16 +6,20 @@
 # How do covariates work?
 # Make sure "dates" object can be a string OR lubridate object already
 # Make sure coordinate order doesn't matter.
+# Latitude should be first...?
 
 ### BSTFAfull
 # BSTFAfull - omega.bar.cur not working. Maybe adapt.iter needs to be > burn?
 # implement tps fully (BSTFAfull)
+# Gotta link cpp functions...
 
 ### Plotting functions
 # Implement "add=T" stuff into functions?
 # Implement a CI vs PI argument
 # Edit "predict at all known locations" option in predictBSTFA
 # Include CI bands in plot.factor
+# Fix dependencies for plot.fourier.bases
+# plot.factor into ggplot2?
 
 ### Ideas?
 # S*alpha only for non-fixed locations?
@@ -65,8 +69,8 @@ BSTFA <- function(ymat, dates, coords,
                  n.factors=min(4,ceiling(n.locs/20)), factors.fixed=NULL, plot.factors=FALSE,
                  load.style='fourier',
                  n.load.bases=ifelse(load.style=='fourier',6,NULL),
-                 freq.lon=(max(coords[,1])-min(coords[,1]))^2,
-                 freq.lat=(max(coords[,2])-min(coords[,2]))^2,
+                 freq.lon=diff(range(coords[,1]))^2,
+                 freq.lat=diff(range(coords[,2]))^2,
                  n.temp.bases=ifelse(floor(n.times*0.10)%%2==1, floor(n.times*0.10)-1, floor(n.times*0.10)),
                  freq.temp=n.times,
                  alpha.prec=1/100000, tau2.gamma=2, tau2.phi=0.0000001, sig2.gamma=2, sig2.phi=1e-5,
@@ -106,6 +110,7 @@ BSTFA <- function(ymat, dates, coords,
   if (!is.null(x)) x <- as.matrix(x)
 
   knots.vec.save.spatial = NULL
+  knots.vec.save.load=NULL
   ### Create newS
   if (spatial.style=='grid') {
     if (is.null(premade.knots)) {
@@ -219,6 +224,7 @@ BSTFA <- function(ymat, dates, coords,
 
 
   ### Set up seasonal component
+  model.matrices$seasonal.bs.basis <- matrix(0,nrow=n.times,ncol=n.seasn.knots)
   if(seasonal == TRUE) {
     newS.xi <- as(kronecker(newS, diag(n.seasn.knots)), "sparseMatrix")
     # newS.xi <- kronecker(newS,diag(n.seasn.knots))
@@ -313,7 +319,6 @@ BSTFA <- function(ymat, dates, coords,
     # model.matrices$QS = QS
 
     ### Bisquare Method
-    knots.vec.save.load=NULL
     if (load.style == 'grid') {
       if (is.null(premade.knots)) {
         n.load.bases=0
@@ -771,7 +776,7 @@ BSTFA <- function(ymat, dates, coords,
                 "n.load.bases" = n.load.bases,
                 "draws" = dim(coda::as.mcmc(t(beta.save)))[1])
 
-  if (save.output = TRUE) save(output, file=filename)
+  if (save.output == TRUE) save(output, file=filename)
 
   output
 

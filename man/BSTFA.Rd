@@ -28,8 +28,8 @@ BSTFA(
   plot.factors = FALSE,
   load.style = "fourier",
   n.load.bases = ifelse(load.style == "fourier", 6, NULL),
-  freq.lon = (max(coords[, 1]) - min(coords[, 1]))^2,
-  freq.lat = (max(coords[, 2]) - min(coords[, 2]))^2,
+  freq.lon = diff(range(coords[, 1]))^2,
+  freq.lat = diff(range(coords[, 2]))^2,
   n.temp.bases = ifelse(floor(n.times * 0.1)\%\%2 == 1, floor(n.times * 0.1) - 1,
     floor(n.times * 0.1)),
   freq.temp = n.times,
@@ -47,7 +47,8 @@ BSTFA(
   burn = iters * 0.5,
   verbose = TRUE,
   filename = "BSTFA.Rdata",
-  save.missing = FALSE
+  save.missing = FALSE,
+  save.output = FALSE
 )
 }
 \arguments{
