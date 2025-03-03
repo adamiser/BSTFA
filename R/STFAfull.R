@@ -27,7 +27,7 @@ BSTFAfull <- function(ymat, dates, n.times=nrow(ymat), n.locs=ncol(ymat), coords
                      thin=1, burn=floor(iters*0.5),
                      c.omega=matrix(0.001, n.factors, n.factors), c.phi.lambda=rep(0.001, n.factors),
                      adapt.iter=floor(iters*0.75), adapt.epsilon=1e-20,
-                     filename='STFA.Rdata', verbose=TRUE, save.missing=FALSE) {
+                     filename='STFA.Rdata', verbose=TRUE, save.missing=TRUE) {
 
 
   start <- Sys.time()

@@ -14,8 +14,8 @@ predictBSTFA = function(out, location=NULL, type='mean',
 
   if (is.null(location)) { # predict for all observed locations
     facts <- matrix(0, ncol=out$draws, nrow=out$n.times*out$n.locs)
-    for(i in 1:draws){
-      facts[,i] <- c(matrix(out$PFmat[i,],nrow=out$n.times,ncol=out$n.factors,byrow=FALSE)%*%t(matrix(out$Lambda[i,],nrow=out$n.locs,ncol=out$n.factors,byrow=TRUE)))
+    for(i in 1:out$draws){
+      facts[,i] <- c(matrix(out$F.tilde[i,],nrow=out$n.times,ncol=out$n.factors,byrow=FALSE)%*%t(matrix(out$Lambda.tilde[i,],nrow=out$n.locs,ncol=out$n.factors,byrow=TRUE)))
     }
     ypreds = kronecker(Matrix::Diagonal(out$n.locs), rep(1,out$n.times))%*%t(out$mu) +
       kronecker(Matrix::Diagonal(out$n.locs), out$model.matrices$linear.Tsub)%*%t(out$beta) +
@@ -34,7 +34,7 @@ predictBSTFA = function(out, location=NULL, type='mean',
 
     facts <- matrix(0, ncol=out$draws, nrow=length(loc.seq))
     for(i in 1:out$draws){
-      facts[,i] <- c(matrix(out$PFmat[i,],nrow=out$n.times,ncol=out$n.factors,byrow=FALSE)%*%t(matrix(out$Lambda[i,lam.seq],nrow=length(location),ncol=out$n.factors,byrow=TRUE)))
+      facts[,i] <- c(matrix(out$F.tilde[i,],nrow=out$n.times,ncol=out$n.factors,byrow=FALSE)%*%t(matrix(out$Lambda.tilde[i,lam.seq],nrow=length(location),ncol=out$n.factors,byrow=TRUE)))
     }
     if (pred.int) {
       resid = matrix(rnorm(out$draws*out$n.times,
@@ -161,7 +161,7 @@ predictBSTFA = function(out, location=NULL, type='mean',
     # F (factor scores)
     facts = array(dim=c(out$n.times,nrow(location),out$draws))
     for (i in 1:out$draws) {
-      facts[,,i] = matrix(out$PFmat[i,],nrow=out$n.times,ncol=out$n.factors)%*%matrix(t(Lam[,,i]),nrow=out$n.factors,ncol=nrow(location))
+      facts[,,i] = matrix(out$F.tilde[i,],nrow=out$n.times,ncol=out$n.factors)%*%matrix(t(Lam[,,i]),nrow=out$n.factors,ncol=nrow(location))
     }
 
     if (pred.int) {
@@ -270,7 +270,7 @@ plot.location = function(out, location, new_x=NULL,
 #' @import ggplot2
 #' @importFrom RColorBrewer brewer.pal
 #' @export plot.grid
-plot.grid = function(out, parameter, loadings=1, type='mean', ci.level=c(0.025, 0.975),
+plot.grid = function(out, parameter, loadings=1, type='mean', ci.level=c(0.025, 0.975), yearscale=TRUE,
                      color.gradient=colorRampPalette(rev(RColorBrewer::brewer.pal(9, name='RdBu')))(50)) {
 
   if (parameter=='slope') {
@@ -283,12 +283,17 @@ plot.grid = function(out, parameter, loadings=1, type='mean', ci.level=c(0.025, 
     if (type=='median') vals = apply(out$mu,2,quantile,prob=0.5)
     if (type=='lb') vals = apply(out$mu,2,quantile,prob=ci.level[1])
     if (type=='ub') vals = apply(out$mu,2,quantile,prob=ci.level[2])
-  } else if (parameter=='loadings') {
-    if (type=='mean') vals = matrix(apply(out$Lambda,2,mean),nrow=out$n.locs,ncol=out$n.factors,byrow=TRUE)
-    if (type=='median') vals = matrix(apply(out$Lambda,2,median),nrow=out$n.locs,ncol=out$n.factors,byrow=TRUE)
-    if (type=='lb') vals = matrix(apply(out$Lambda,2,quantile,prob=ci.level[1]),nrow=out$n.locs,ncol=out$n.factors,byrow=TRUE)
-    if (type=='ub') vals = matrix(apply(out$Lambda,2,quantile,prob=ci.level[2]),nrow=out$n.locs,ncol=out$n.factors,byrow=TRUE)
+  } else if (parameter=='loading') {
+    if (type=='mean') vals = matrix(apply(out$Lambda.tilde,2,mean),nrow=out$n.locs,ncol=out$n.factors,byrow=TRUE)
+    if (type=='median') vals = matrix(apply(out$Lambda.tilde,2,median),nrow=out$n.locs,ncol=out$n.factors,byrow=TRUE)
+    if (type=='lb') vals = matrix(apply(out$Lambda.tilde,2,quantile,prob=ci.level[1]),nrow=out$n.locs,ncol=out$n.factors,byrow=TRUE)
+    if (type=='ub') vals = matrix(apply(out$Lambda.tilde,2,quantile,prob=ci.level[2]),nrow=out$n.locs,ncol=out$n.factors,byrow=TRUE)
   }
+
+  if (parameter=='slope' & yearscale) {
+    vals <- vals*365.25/(out$doy[2] - out$doy[1])
+  }
+
   max_value = max(abs(min(vals)),abs(max(vals)))
   min_value = -max_value
 
@@ -303,7 +308,7 @@ plot.grid = function(out, parameter, loadings=1, type='mean', ci.level=c(0.025, 
       scale_colour_gradientn(colors=color.gradient,
                              name='Slope', limits = c(min_value, max_value)))
   }
-  if (parameter == 'loadings') {
+  if (parameter == 'loading') {
     for (i in loadings) {
       print(ggplot(mapping=aes(x=out$coords[,1], y=out$coords[,2], color=vals[,i])) +
               geom_point() +
@@ -651,20 +656,20 @@ plot.factor = function(out, factor=1, together=FALSE, include.legend=TRUE,
 
   par(mfrow=c(1,1))
 
-  if (type=='mean') PFmat = matrix(apply(out$PFmat,2,mean),nrow=out$n.times,ncol=out$n.factors,byrow=FALSE)
-  if (type=='median') PFmat = matrix(apply(out$PFmat,2,median),nrow=out$n.times,ncol=out$n.factors,byrow=FALSE)
-  if (type=='lb') PFmat = matrix(apply(out$PFmat,2,quantile,prob=ci.level[1]),nrow=out$n.times,ncol=out$n.factors,byrow=FALSE)
-  if (type=='ub') PFmat = matrix(apply(out$PFmat,2,quantile,prob=ci.level[1]),nrow=out$n.times,ncol=out$n.factors,byrow=FALSE)
+  if (type=='mean') F.tilde = matrix(apply(out$F.tilde,2,mean),nrow=out$n.times,ncol=out$n.factors,byrow=FALSE)
+  if (type=='median') F.tilde = matrix(apply(out$F.tilde,2,median),nrow=out$n.times,ncol=out$n.factors,byrow=FALSE)
+  if (type=='lb') F.tilde = matrix(apply(out$F.tilde,2,quantile,prob=ci.level[1]),nrow=out$n.times,ncol=out$n.factors,byrow=FALSE)
+  if (type=='ub') F.tilde = matrix(apply(out$F.tilde,2,quantile,prob=ci.level[1]),nrow=out$n.times,ncol=out$n.factors,byrow=FALSE)
 
   if (is.null(xrange)) xlims=1:out$n.times
   else xlims=which(out$dates > xrange[1] & out$dates < xrange[2])
   if (together) {
-    plot(y=PFmat[xlims,1], x=out$dates[xlims], type='l', main = ('All Factors'),
+    plot(y=F.tilde[xlims,1], x=out$dates[xlims], type='l', main = ('All Factors'),
          xlab = 'Time', ylab='Value', col=1,
-         ylim=range(PFmat))
+         ylim=range(F.tilde))
          # ylim=c(-3,5))
     for (i in 2:out$n.factors) {
-      lines(y=PFmat[,i], x=out$dates, type='l', col=i)
+      lines(y=F.tilde[,i], x=out$dates, type='l', col=i)
     }
     if (include.legend) {
       legend("topleft",
@@ -673,14 +678,14 @@ plot.factor = function(out, factor=1, together=FALSE, include.legend=TRUE,
              col = seq(1,out$n.factors),
              lty=1,
              lwd=2,
-             xpd=TRUE,
-             inset=c(0.2,0))
+             xpd=TRUE)
+             #inset=c(0.2,0))
     }
 
   }
   if (!together) {
     for (i in factor) {
-      plot(y=PFmat[,i], x=out$dates, type='l', main=paste('Factor', i),
+      plot(y=F.tilde[,i], x=out$dates, type='l', main=paste('Factor', i),
            xlab = 'Time', ylab='Value')
     }
   }

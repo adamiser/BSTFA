@@ -1,52 +1,3 @@
-### FIX ME ###
-### BSTFA
-# Implement ... argument into function
-# Check default values for everything, comment on differences
-# Make n.load.bases and n.spatial.bases arguments make more sense for all basis styles
-# How do covariates work?
-# Make sure "dates" object can be a string OR lubridate object already
-# Make sure coordinate order doesn't matter.
-# Latitude should be first...?
-
-### BSTFAfull
-# BSTFAfull - omega.bar.cur not working. Maybe adapt.iter needs to be > burn?
-# implement tps fully (BSTFAfull)
-# Gotta link cpp functions...
-
-### Plotting functions
-# Implement "add=T" stuff into functions?
-# Implement a CI vs PI argument
-# Edit "predict at all known locations" option in predictBSTFA
-# Include CI bands in plot.factor
-# Fix dependencies for plot.fourier.bases
-# plot.factor into ggplot2?
-
-### Ideas?
-# S*alpha only for non-fixed locations?
-# So, have S only include non-fixed locations?
-
-### NOTES
-# tps changes n.load.bases and n.spatial.bases to floor(sqrt(n.load.bases))^2
-# n.temp.bases will automatically become even
-# I don't think we do uncertainty in alpha coefficients for plot.map or plot.annual since those are
-  # plotting the MEAN of those processes.
-  # We then get a CI around the MEAN slope,loading,seasonal,etc.
-  # This is plotting the expected value with a CI around the expected value of the parameter.
-  # It doesn't make sense to use a prediction interval when modeling the mean of a process.
-  # We're not drawing random processes from a distribution! Only the data are defined in that way,
-  # not the processes.
-  # Thus, we use PI (prediction intervals), which use variability in the data AND unknown processes,
-  # for locations which have no data.
-
-### Questions
-# Show how package looks on github.
-# Global functions like plot, summary, etc. What would that look like? What would the default be?
-# Discuss vignette outline used by Bobby Gramacy. Do you like that?
-# What would my defense look like? Any discussion of theory, just showing the package, etc.? Live coding demo?
-# Prediction discussion.
-
-
-
 ##### BSTFA FUNCTION - FA Reduction built in #####
 
 #' Reduced BSTFA function
@@ -64,11 +15,11 @@ BSTFA <- function(ymat, dates, coords,
                  mean=FALSE, linear=TRUE, seasonal=TRUE, factors=TRUE,
                  n.seasn.knots=7,
                  spatial.style='fourier',
-                 n.spatial.bases=ifelse(spatial.style=='fourier',8,NULL),
+                 n.spatial.bases=8,
                  knot.levels=2, max.knot.dist=mean(dist(coords)), premade.knots=NULL, plot.knots=FALSE,
                  n.factors=min(4,ceiling(n.locs/20)), factors.fixed=NULL, plot.factors=FALSE,
                  load.style='fourier',
-                 n.load.bases=ifelse(load.style=='fourier',6,NULL),
+                 n.load.bases=6,
                  freq.lon=diff(range(coords[,1]))^2,
                  freq.lat=diff(range(coords[,2]))^2,
                  n.temp.bases=ifelse(floor(n.times*0.10)%%2==1, floor(n.times*0.10)-1, floor(n.times*0.10)),
@@ -76,7 +27,7 @@ BSTFA <- function(ymat, dates, coords,
                  alpha.prec=1/100000, tau2.gamma=2, tau2.phi=0.0000001, sig2.gamma=2, sig2.phi=1e-5,
                  sig2=as.vector(var(y)), beta=NULL, xi=NULL,
                  Fmat=matrix(0,nrow=n.times,ncol=n.factors), Lambda=matrix(0,nrow=n.locs, n.factors),
-                 thin=1, burn=iters*0.5, verbose=TRUE, filename='BSTFA.Rdata', save.missing=FALSE,
+                 thin=1, burn=iters*0.5, verbose=TRUE, filename='BSTFA.Rdata', save.missing=TRUE,
                  save.output=FALSE) {
 
   start <- Sys.time()
@@ -109,7 +60,7 @@ BSTFA <- function(ymat, dates, coords,
   ### Change x to matrix if not null
   if (!is.null(x)) x <- as.matrix(x)
 
-  knots.vec.save.spatial = NULL
+  knots.vec.save.spatial=NULL
   knots.vec.save.load=NULL
   ### Create newS
   if (spatial.style=='grid') {
@@ -118,6 +69,9 @@ BSTFA <- function(ymat, dates, coords,
       for (i in 1:(knot.levels)) {
         n.spatial.bases <- n.spatial.bases + 4^(i)
       }
+    }
+    else {
+      n.spatial.bases = nrow(matrix(unlist(premade.knots),ncol=2))
     }
     ### using function makeNewS - uses bisquare distance
     newS.output = makeNewS(coords=coords,n.locations=n.locs,knot.levels=knot.levels,
@@ -285,6 +239,7 @@ BSTFA <- function(ymat, dates, coords,
 
     ### Fourier Method
     # Create Fourier basis functions
+    if (n.temp.bases%%2 == 1) n.temp.bases=n.temp.bases+1
     m.fft <- sapply(1:(n.temp.bases/2), function(k) {
       sin_term <- sin(2 * pi * k * (1:n.times)/freq.temp)
       cos_term <- cos(2 * pi * k * (1:n.times)/freq.temp)
@@ -417,7 +372,8 @@ BSTFA <- function(ymat, dates, coords,
       factors.fixed = p
     }
     n.factors=length(factors.fixed)
-    Lambda[factors.fixed,] = diag(n.factors)
+    Lambda.tilde = Lambda
+    Lambda.tilde[factors.fixed,] = diag(n.factors)
 
     if (plot.factors) {
       plot(coords, xlab='Longitude', ylab='Latitude', main='Fixed Factor Locations')
@@ -428,8 +384,8 @@ BSTFA <- function(ymat, dates, coords,
   delayFA = min(floor(burn/2), 500)
 
   alphaT.save <- matrix(0, nrow=n.factors*n.temp.bases, ncol=floor((iters-burn)/thin))
-  PFmat.save <- matrix(0, nrow=n.factors*n.times, ncol=floor((iters-burn)/thin))
-  Lambda.save <- matrix(0, nrow=n.factors*n.locs, ncol=floor((iters-burn)/thin))
+  F.tilde.save <- matrix(0, nrow=n.factors*n.times, ncol=floor((iters-burn)/thin))
+  Lambda.tilde.save <- matrix(0, nrow=n.factors*n.locs, ncol=floor((iters-burn)/thin))
   alphaS.save <- matrix(0, nrow=n.factors*n.load.bases, ncol=floor((iters-burn)/thin))
   tau2.lambda.save <- matrix(0, nrow=1, ncol=floor((iters-burn)/thin))
   alphaT <- rep(0, n.factors*n.temp.bases)
@@ -458,7 +414,7 @@ BSTFA <- function(ymat, dates, coords,
   ### Set up time.data
   time.data = matrix(0, nrow=floor(iters/thin), ncol=5)
   time.data = as.data.frame(time.data)
-  colnames(time.data) = c('beta', 'xi', 'F', 'Lambda', 'sigma2')
+  colnames(time.data) = c('beta', 'xi', 'F.tilde', 'Lambda.tilde', 'sigma2')
   end <- Sys.time()
   setup.time = end-start
 
@@ -609,15 +565,15 @@ BSTFA <- function(ymat, dates, coords,
 
       ### Sample values of alphaT
       temp = y - Jfullmu.long - Tfullbeta.long - Bfullxi.long
-      lamPQTtlamPQT <- kronecker(t(Lambda)%*%Lambda, PQTtPQT) # This is much faster than t(kronecker(Lambda,PQT))%*%kronecker(Lambda,PQT)
+      lamPQTtlamPQT <- kronecker(t(Lambda.tilde)%*%Lambda.tilde, PQTtPQT) # This is much faster than t(kronecker(Lambda.tilde,PQT))%*%kronecker(Lambda.tilde,PQT)
       alphaT.var <- solve((1/sig2)*lamPQTtlamPQT + Matrix::Diagonal(x=alpha.prec, n=n.factors*n.temp.bases))
       tempmat = matrix(temp, nrow=n.times, ncol=n.locs)
-      alphaT.mean <- (1/sig2)*alphaT.var%*%matrixcalc::vec(t(PQT)%*%tempmat%*%Lambda) # matrixcalc::vec(t(QT)%*%ymat%*%Lambda) is a shortcut for t(lamQT)%*%y
+      alphaT.mean <- (1/sig2)*alphaT.var%*%matrixcalc::vec(t(PQT)%*%tempmat%*%Lambda.tilde) # matrixcalc::vec(t(QT)%*%ymat%*%Lambda.tilde) is a shortcut for t(lamQT)%*%y
       # alphaT <- as.vector(MASS::mvrnorm(1, alphaT.mean, alphaT.var))
       alphaT <- my_mvrnorm(alphaT.mean, alphaT.var)
       rm(list=c("alphaT.var", "alphaT.mean"))
       Fmat = QT%*%matrix(alphaT, nrow=n.temp.bases, ncol=n.factors, byrow=F)
-      PFmat = PQT%*%matrix(alphaT, nrow=n.temp.bases, ncol=n.factors, byrow=F)
+      F.tilde = PQT%*%matrix(alphaT, nrow=n.temp.bases, ncol=n.factors, byrow=F)
       end = Sys.time()
       time.data[i,3] = end-start
 
@@ -626,41 +582,41 @@ BSTFA <- function(ymat, dates, coords,
 
       temp = y - Jfullmu.long - Tfullbeta.long - Bfullxi.long
       tempmat = matrix(temp, nrow=n.times, ncol=n.locs)
-      IkPFtPF <- as(kronecker(diag(1, n.locs), t(PFmat)%*%PFmat), "sparseMatrix")
+      IkPFtPF <- as(kronecker(diag(1, n.locs), t(F.tilde)%*%F.tilde), "sparseMatrix")
       lam.var <- solve((1/sig2)*IkPFtPF + Matrix::Diagonal(x=1/tau2.lambda, n=n.locs*n.factors))
-      lam.mean <- lam.var%*%((1/sig2)*matrixcalc::vec(t(PFmat)%*%tempmat) + (1/tau2.lambda)*QsI%*%alphaS)
+      lam.mean <- lam.var%*%((1/sig2)*matrixcalc::vec(t(F.tilde)%*%tempmat) + (1/tau2.lambda)*QsI%*%alphaS)
 
       ### which indices are fixed in the long lambda?
       Lam.index <- matrix(1:(n.factors*n.locs), nrow=n.locs, ncol=n.factors, byrow=T)
       fix.l <- c(t(Lam.index)[,factors.fixed])
-      Lambda.long <- c(t(Lambda))
+      Lambda.tilde.long <- c(t(Lambda.tilde))
 
-      lmu <- lam.mean[-fix.l] + lam.var[-fix.l, fix.l]%*%solve(lam.var[fix.l,fix.l])%*%(Lambda.long[fix.l] - lam.mean[fix.l])
+      lmu <- lam.mean[-fix.l] + lam.var[-fix.l, fix.l]%*%solve(lam.var[fix.l,fix.l])%*%(Lambda.tilde.long[fix.l] - lam.mean[fix.l])
       lvar <- lam.var[-fix.l, -fix.l] - lam.var[-fix.l, fix.l]%*%solve(lam.var[fix.l,fix.l])%*%lam.var[fix.l,-fix.l]
-      Lambda.long[-fix.l] <- my_mvrnorm(lmu, lvar)
+      Lambda.tilde.long[-fix.l] <- my_mvrnorm(lmu, lvar)
 
-      Lambda <- matrix(Lambda.long, nrow=n.locs, ncol=n.factors, byrow=T)
+      Lambda.tilde <- matrix(Lambda.tilde.long, nrow=n.locs, ncol=n.factors, byrow=T)
 
       ### Sample values of alpha.S
       alphaS.var <- solve((1/tau2.lambda)*QstQsI + Matrix::Diagonal(x=alpha.prec, n=n.factors*n.load.bases))
-      alphaS.mean <- alphaS.var%*%((1/tau2.lambda)*matrixcalc::vec(t(Lambda)%*%QS))
+      alphaS.mean <- alphaS.var%*%((1/tau2.lambda)*matrixcalc::vec(t(Lambda.tilde)%*%QS))
       alphaS <- my_mvrnorm(alphaS.mean, alphaS.var)
 
       ### Sample tau2.lambda
-      tau2.shape = tau2.gamma + length(Lambda)/2
-      tau2.rate = tau2.phi + 0.5*Matrix::t(Lambda.long - QsI%*%alphaS)%*%(Lambda.long - QsI%*%alphaS)
+      tau2.shape = tau2.gamma + length(Lambda.tilde)/2
+      tau2.rate = tau2.phi + 0.5*Matrix::t(Lambda.tilde.long - QsI%*%alphaS)%*%(Lambda.tilde.long - QsI%*%alphaS)
       tau2.lambda = 1/rgamma(1,shape=tau2.shape,rate=as.vector(tau2.rate))
       rm(list=c("tau2.shape", "tau2.rate"))
       end = Sys.time()
       time.data[i,4] = end-start
 
-      FLambda.long = c(PFmat%*%t(Lambda))
+      FLambda.long = c(F.tilde%*%t(Lambda.tilde))
 
       ### Save values of FA
       if (i%%thin == 0 & i > burn) {
         alphaT.save[,(i-burn)/thin] <- alphaT
-        PFmat.save[,(i-burn)/thin] <- matrixcalc::vec(PFmat)
-        Lambda.save[,(i-burn)/thin] <- Lambda.long
+        F.tilde.save[,(i-burn)/thin] <- matrixcalc::vec(F.tilde)
+        Lambda.tilde.save[,(i-burn)/thin] <- Lambda.tilde.long
         alphaS.save[,(i-burn)/thin] <- alphaS
         tau2.lambda.save[,(i-burn)/thin] <- tau2.lambda
       }
@@ -679,8 +635,8 @@ BSTFA <- function(ymat, dates, coords,
       #   prop.converged=round(length(which(eSS>eSS.converged))/1,2)*100
       #   print(paste(prop.converged,"% of tau2.lambda parameters have eSS > ",eSS.converged, sep=""))
       #
-      #   eSS = apply(Lambda.save,1,effectiveSize)
-      #   prop.converged=round(length(which(eSS>eSS.converged))/dim(Lambda.save)[1],2)*100
+      #   eSS = apply(Lambda.tilde.save,1,effectiveSize)
+      #   prop.converged=round(length(which(eSS>eSS.converged))/dim(Lambda.tilde.save)[1],2)*100
       #   print(paste(prop.converged,"% of Lambda parameters have eSS > ",eSS.converged, sep=""))
       # }
     }
@@ -743,8 +699,8 @@ BSTFA <- function(ymat, dates, coords,
                 "alpha.xi" = coda::as.mcmc(t(alpha.xi.save)),
                 "tau2.xi" = coda::as.mcmc(t(tau2.xi.save)),
                 "alphaT" = coda::as.mcmc(t(alphaT.save)),
-                "PFmat" = coda::as.mcmc(t(PFmat.save)),
-                "Lambda" = coda::as.mcmc(t(Lambda.save)),
+                "F.tilde" = coda::as.mcmc(t(F.tilde.save)),
+                "Lambda.tilde" = coda::as.mcmc(t(Lambda.tilde.save)),
                 "alphaS" = coda::as.mcmc(t(alphaS.save)),
                 "tau2.lambda" = coda::as.mcmc(t(tau2.lambda.save)),
                 "sig2" = coda::as.mcmc(t(sig2.save)),
