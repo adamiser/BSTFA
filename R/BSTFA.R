@@ -9,6 +9,7 @@
 #' @importFrom MASS mvrnorm
 #' @importFrom npreg basis.tps
 #' @import Matrix
+#' @import npreg
 #' @export BSTFA
 BSTFA <- function(ymat, dates, coords,
                  iters=10000, n.times=nrow(ymat), n.locs=ncol(ymat), x=NULL,
@@ -25,7 +26,7 @@ BSTFA <- function(ymat, dates, coords,
                  n.temp.bases=ifelse(floor(n.times*0.10)%%2==1, floor(n.times*0.10)-1, floor(n.times*0.10)),
                  freq.temp=n.times,
                  alpha.prec=1/100000, tau2.gamma=2, tau2.phi=0.0000001, sig2.gamma=2, sig2.phi=1e-5,
-                 sig2=as.vector(var(y)), beta=NULL, xi=NULL,
+                 sig2=NULL, beta=NULL, xi=NULL,
                  Fmat=matrix(0,nrow=n.times,ncol=n.factors), Lambda=matrix(0,nrow=n.locs, n.factors),
                  thin=1, burn=iters*0.5, verbose=TRUE, filename='BSTFA.Rdata', save.missing=TRUE,
                  save.output=FALSE) {
@@ -47,6 +48,7 @@ BSTFA <- function(ymat, dates, coords,
   missing = ifelse(is.na(y), TRUE, FALSE)
   prop.missing = apply(ymat, 2, function(x) sum(is.na(x)) / n.times)
   y[missing] = 0
+  if (is.null(sig2)) sig2 = var(y)
 
   if(save.missing==T & sum(missing)!=0){
     y.save <- matrix(0, nrow=sum(missing), ncol=floor((iters-burn)/thin))

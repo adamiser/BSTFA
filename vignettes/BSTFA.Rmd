@@ -165,25 +165,22 @@ devtools::load_all()
 
 ```
 
-FIX ME - size of plots.
-
-FIX ME - Include $\sigma^2$ hyperparameters?
 
 # Intended Audience {.unnumbered}
 
 This document is intended to help even novice statistics students implement a fully Bayesian spatio-temporal analysis. Every function within the package is designed with this audience in mind. This document is meant to guide any potential user of this package through the basic theory and implementation of our models: in essence, it is an instruction manual. The bulk of this document contains examples of our functions applied on a real dataset.
 
-The outline is as follows. First, we introduce the motivation behind our Bayesian spatio-temporal factor analysis models and why simplifying the model for fast computation is important. Section 1 outlines the available functions and procedures within the BSTFA package. Some basic theory and methodology are contained in Section 2, and Section 3 demonstrates the BSTFA package on simulated and real world data. The appendix details additional resources, such as...
+The outline is as follows. First, we introduce the motivation behind our Bayesian spatio-temporal factor analysis models and why simplifying the model for fast computation is important. Section 1 outlines the available functions and procedures within the `BSTFA` package along with demonstrations on a real data set. Some basic theory and methodology are contained in Section 2, and Section 3 details specific features of the package. The appendix contains references and additional notes on computation.
 
 # Motivation {.unnumbered}
 
 <!-- Modeling environmental processes presents specific challenges and "has itself become a highly diverse effort". The modeling scheme must be catered towards solving the specific challenges presented by the data. Common challenges include accounting for dependencies in space and time, modeling known versus unknown trends, and understanding global versus local processes.  -->
 
-Consider for example the motivating data for the BSTFA package: a collection of temperature measurements across the state of Utah. The data were collected from May 1912 through January 2015 from 146 weather stations across the state. These measurements are 30-day averages of daily minimum observed temperatures in degrees Celcius, with each location's measurements zero-centered. This environmental process exhibits some of the challenges common in environmental modeling; that is, the data show obvious spatial and temporal dependence and not all contributing agents are known or easy to include in a modeling scheme. 
+Consider for example the motivating data for the `BSTFA` package: a collection of temperature measurements across the state of Utah. The data were collected from May 1912 through January 2015 from 146 weather stations across the state. These measurements are 30-day averages of daily minimum observed temperatures in degrees Celcius, with each location's measurements zero-centered. This environmental process exhibits some of the challenges common in environmental modeling; that is, the data show obvious spatial and temporal dependence and not all contributing agents are known or easy to include in a modeling scheme. 
 
 Take for example the observations for three weather stations: Moab, Canyonlands National Park, and Logan. The Moab and Canyonlands stations are near one another (within 50 miles) while the Logan station is far away (300 miles). Figure 0.1 shows these same temperature series zoomed in on the years 1999 through 2001. The difference between low temperatures in winter 2000 and winter 2001 is slight in Moab and the Canyonlands, but in Logan, the low temperature decreases dramatically from winter 2000 to winter 2001, showing that locations near each other in space exhibit similar environmental trends. We don't know from the data alone what contributed to that difference; we simply know it exists. We need a model that provides inference into the spatio-temporal relationships. Spatio-temporal factor analysis allows us to account for underlying spatio-temporal dependencies and explore numerical and visual summaries of that dependence. 
 
-A fully parameterized Bayesian approach to spatio-temporal factor analysis is computationally burdensome. Our BSTFA package accounts for this by using dimension reduction via basis functions, allowing for faster computation. The remainder of this vignette describes the BSTFA package and its use of basis functions, as well as all implemented methods for plotting, prediction, and inference.
+A fully parameterized Bayesian approach to spatio-temporal factor analysis is computationally burdensome. Our `BSTFA` package accounts for this by using dimension reduction via basis functions, allowing for faster computation. The remainder of this vignette describes the `BSTFA` package and its use of basis functions, as well as all implemented methods for plotting, prediction, and inference.
 
 ```{r, fig-utahTemps, echo=FALSE, fig.height=4, fig.width=10, fig.cap='Mean-centered 30-day average daily minimum temperatures for 3 Utah weather stations (Moab, left; Canyonlands, middle; Logan, right) from 1999 to 2001.'}
 
@@ -217,13 +214,13 @@ plot(y=utahDataList$TemperatureVals[window,utahDataList$Locations=='LOGAN.UTAH.S
 
 # What is Implemented?
 
-The BSTFA package contains implementation of two versions of a spatio-temporal factor analysis model along with functions for prediction, plotting and visualizing posterior surfaces. The model-fitting functions are defined in Section 1.1, while the methodology associated with these models is described more fully in Section 2. The BSTFA package's prediction methods are discussed in Section 1.2, functions for plotting/visualization are described in Section 1.3, and notes about computational speed are outlined in Section 1.4. 
+The `BSTFA` package contains implementation of two versions of a spatio-temporal factor analysis model along with functions for prediction, plotting and visualizing posterior surfaces. The model-fitting functions are defined in Section 1.1, while the methodology associated with these models is described more fully in Section 2. The `BSTFA` package's prediction methods are discussed in Section 1.2, functions for plotting/visualization are described in Section 1.3, and notes about computational speed are outlined in Section 1.4. 
 
 While each of these sections describes some arguments to the functions, the best way to understand all available function arguments is to look at the R help documentation.
 
 ## Model-fitting Functions
 
-The BSTFA package contains two model fitting functions: `BSTFA`, the smoother but computationally-efficient spatio-temporal factor analysis model using basis functions for the factor analysis; and `BSTFAfull`, the fine-grain but slower spatio-temporal factor analysis model using Gaussian processes for the factor analysis. Both functions return a $\textit{list}$ object containing all information required to summarize posterior inference, including all posterior draws from each parameter, matrices containing the basis functions, and information about computation time. Each function has only three required arguments, summarized in Table 1.1. Other arguments relating to model fitting and prior specification will be discussed more fully in Section 2.
+The `BSTFA` package contains two model fitting functions: `BSTFA`, the smoother but computationally-efficient spatio-temporal factor analysis model using basis functions for the factor analysis; and `BSTFAfull`, the fine-grain but slower spatio-temporal factor analysis model using Gaussian processes for the factor analysis. Both functions return a $\textit{list}$ object containing all information required to summarize posterior inference, including all posterior draws from each parameter, matrices containing the basis functions, and information about computation time. Each function has only three required arguments, summarized in Table 1.1. Other arguments relating to model fitting and prior specification will be discussed more fully in Section 2.
 
 
 ### Table 1.1 {.unnumbered}
@@ -233,11 +230,13 @@ The BSTFA package contains two model fitting functions: `BSTFA`, the smoother bu
 | Argument | Description |
 |-----|--------------------|
 | ymat | A matrix of response values. Each row should represent a point in time; each column should represent a specific location. Missing observations should be recorded as NA. |
-| dates | A vector of dates of length nrow(ymat). The model functions will transform this vector into "doy" (day of year) using `lubridate::yday()`. Thus, this vector must either be a lubridate or string object with year-month-day format. |
-| coords | A matrix/data frame of coordinate values with 2 columns and number of rows equal to `ncol(ymat)`. If using longitude/latitude, longitude should be the first column. |
+| dates | A vector of dates of length `nrow(ymat)`. The model functions will transform this vector into "doy" (day of year) using `lubridate::yday()`. Thus, this vector must either be a lubridate or string object with year-month-day format. |
+| coords | A matrix/data frame of coordinate values number of rows equal to `ncol(ymat)` and 2 columns; if using longitude/latitude, longitude should be the first column. |
 
 
 The `BSTFA` and `BSTFAfull` functions are demonstrated below. Additional MCMC arguments such as `iters`, `thin`, and `burn` have default values, but they can be specified as in any Bayesian model to control the number of posterior samples. The `verbose` argument controls whether or not the function gives status updates during sampling. Though the default value for this is `TRUE`, for the sake of this vignette, `verbose` will always be set to `FALSE`. Also, if desired, the function can save output directly to a `.Rdata` file by setting `save.output == TRUE`. This value is set to `FALSE` by default.
+
+$\textbf{Note:}$ The `utahDataList` list object in the `BSTFA` package contains the observed temperature data (`TemperatureVals`), the associated dates (`Dates`), the coordinates (`Coords`), and the weather station locations (`Locations`).
 
 ```{r BSTFA Function, echo=FALSE, include=FALSE, cache=FALSE}
 # This code runs the function correctly but isn't shown in the vignette
@@ -271,7 +270,7 @@ bstfa_full.output = BSTFAfull(ymat=utahDataList$TemperatureVals,
 
 The `BSTFA` and `BSTFAfull` functions output a list object. Most objects contained in the list are self-explanatory. A few, however, warrant further explanation.
 
-- Each object that is a parameter (i.e., `beta`) is an MCMC object with number of rows equal to the number of MCMC draws.
+- Each object that is a parameter (i.e., `beta`) is an MCMC object (from the coda package) with number of rows equal to the number of MCMC draws.
 
 - `time.data` is a matrix with number of rows equal to `iters` and columns indicating the computation time (in seconds) for the given parameter on that given iteration. This is the object used to create the `computation.summary` mentioned in Section 1.4.
 
@@ -279,24 +278,24 @@ The `BSTFA` and `BSTFAfull` functions output a list object. Most objects contain
 
 - `model.matrices` stores all basis function matrices and other useful matrices for calculating $Y$ (more details given in Section 2).
 
-  - `newS` is equivalent to $\mathbf{B_\beta} = \mathbf{B}_{\xi_j} \forall j$ and has dimension $n$ $\times b_\beta$, where $b_\beta = b_\xi = $ `n.spatial.bases`.
-  - `linear.Tsub` is $t-\bar{t}$,  $T \times 1$ vector of values $t-\bar{t}$  $\forall$ $t$.
+  - `newS` is equivalent to $\mathbf{B_\beta} = \mathbf{B}_{\xi_j} \forall j$ and has dimension $n \times b_\beta$. Note that $b_\beta = b_\xi$, and this value is `n.spatial.bases` in the model functions.
+  - `linear.Tsub` is $t-\bar{t}$,  a $T \times 1$ vector of values $t-\bar{t}$  $\forall$ $t$.
   - `seasonal.bs.basis` is the $t \times u$ matrix of cubic circular b-spline bases where each row represents $\mathbf{U}(t^*)$ for a given time point $t^*$.
   - `confoundingPmat.prime` is an orthogonal projection matrix $P^{\perp}$ used to prevent confounding between the linear and seasonal components and the factor analysis component. For more information about this component, see @berrett2020.
   - `QT` is the $t \times R_t$ matrix of Fourier basis functions for the factors.
   - `QS` is the $n \times R_s$ matrix of basis functions used for the loadings. If `spatial.style == load.style` and `n.spatial.bases == n.load.bases`, this will be equivalent to `newS`.
   
-- $\mathbf{Note:}$ Care must be taken in understanding the ordering `F.tilde` and `Lambda.tilde` (discussed in greater detail in Section 2.1.3). Each draw of `F.tilde` (meaning, each column) has dimension $tL \times 1$. This means the first $t$ values correspond to factor one, the next $t$ values correspond to factor two, and so on. However, each draw of `Lambda.tilde` has dimension $Ln \times 1$. This means the first $L$ values correspond to location one, the next $L$ values correspond to location two, and so on. When converting a draw of `F.tilde` into a matrix, setting `byrow=FALSE` provides the appropriate $t \times L$ matrix, while when converting a draw of `Lambda.tilde` into a matrix, setting `byrow=TRUE` provides the appropriate $n \times L$ matrix.
+- $\mathbf{Note:}$ Care must be taken in understanding the ordering of `F.tilde` and `Lambda.tilde` (discussed in greater detail in Section 2.1.3). Each draw of `F.tilde` (meaning, each column) has dimension $TL \times 1$. This means the first $T$ values correspond to factor one, the next $T$ values correspond to factor two, and so on. However, each draw of `Lambda.tilde` has dimension $Ln \times 1$. This means the first $L$ values correspond to location one, the next $L$ values correspond to location two, and so on. When converting a draw of `F.tilde` into a matrix, setting `byrow=FALSE` provides the appropriate $T \times L$ matrix, while when converting a draw of `Lambda.tilde` into a matrix, setting `byrow=TRUE` provides the appropriate $n \times L$ matrix.
 
 ## Prediction
 
-The function `predictBSTFA` takes as its first argument the output from the `BSTFA` or `BSTFAfull` functions. Within the function, posterior samples from relevant parameters are used to generate predictions either for the spatio-temporal processes, $Y(\mathbf{s}, t)$, at observed location $\mathbf{s}$ and time $t$, or for, $Y(\mathbf{s^*}, t)$, at $\textit{unobserved}$ location $\mathbf{s^*}$ at time $t$. The function also takes as input either a location number (corresponding to the appropriate column of your `ymat` argument) for predicting at an observed location, or a matrix/data frame of coordinate values if predicting at a new location. 
+The function `predictBSTFA` takes as its first argument the output from the `BSTFA` or `BSTFAfull` functions. Within the function, posterior samples from relevant parameters are used to generate predictions either for the spatio-temporal processes, $Y(\mathbf{s}, t)$, at observed location $\mathbf{s}$ and time $t$, or for, $Y(\mathbf{s^*}, t)$, at $\textit{unobserved}$ location $\mathbf{s^*}$ and time $t$. The `location` argument takes either a location number (corresponding to the appropriate column of your `ymat` argument) for predicting at an observed location, or a matrix/data frame of coordinate values if predicting at a new location. 
 
-If the argument `type` is set to `"all"`, the function will return all draws of $Y$. `type` can also be set to `"mean"`, `"median"`, `"ub"` (upper bound), or `"lb"` (lower bound). The option `pred.int` controls whether your uncertainty is a prediction interval (`pred.int == TRUE`; default value) or a credible interval (`pred.int == FALSE`). The function is demonstrated below.
+If the argument `type` is set to `"all"`, the function will return all draws of $Y$. `type` can also be set to `"mean"`, `"median"`, `"ub"` (upper bound), or `"lb"` (lower bound). The option `pred.int` controls whether the calculated uncertainty is a prediction interval (`pred.int == TRUE`; default value) or a credible interval (`pred.int == FALSE`). The function is demonstrated below.
 
 Predicting at an observed location. Since `type == "all"`, the function will return a $t \times d$ MCMC object matrix of posterior draws of $Y$ with $d$ being the number of MCMC draws. Each column represents one draw of $\mathbf{Y}$.
 
-```{r, eval=FALSE}
+```{r}
 loc = 1 # Alpine, Utah in our dataset
 preds = predictBSTFA(bstfa.output, 
                      location = loc,
@@ -308,7 +307,7 @@ dim(preds)
 
 Setting `type == "mean"`, for example, returns a $t \times 1$ MCMC object vector containing the posterior mean of $Y$ at each time point $t$.
 
-```{r, eval=FALSE}
+```{r}
 loc = 1 # Alpine, Utah in our dataset
 preds = predictBSTFA(bstfa.output, 
                      location = loc,
@@ -319,23 +318,22 @@ dim(preds)
 length(preds)
 ```
 
-Predicting at an $\textit{unobserved}$ location.
+To predict at an $\textit{unobserved}$ location, set the `location` argument to a data frame of coordinate values.
 
-```{r, eval=FALSE}
+```{r}
 loc = data.frame('Longitude' = 111.41, 'Latitude' = 38.29) # Torrey, Utah
-preds = predictBSTFA(bstfa.output, 
-                     location = loc,
-                     type='all',
-                     pred.int=TRUE,
-                     ci.level=c(0.025,0.975))
-dim(preds)
+preds_new = predictBSTFA(bstfa.output, 
+                         location = loc,
+                         type='all',
+                         pred.int=TRUE,
+                         ci.level=c(0.025,0.975))
 ```
 
 The `predictBSTFA` function is also called within the `plot.location` function, which takes similar arguments as `predictBSTFA` with the addition of a few extra plotting arguments. `xrange` indicates the time points to plot the estimates, with default value `NULL` indicating to plot on all of $t$. `truth` (default value `FALSE`) will plot the observed data underneath the estimates if the `location` comes from the data set. `uncertainty` (default value `TRUE`) indicates whether to plot a prediction interval (`pred.int==TRUE`) or a credible interval (`pred.int==FALSE`) with the estimate.
 
 Plotting predictions at an observed location:
 
-```{r}
+```{r, fig.width=4, fig.height=2}
 loc = 1 # Alpine, Utah in our dataset
 plot.location(bstfa.output,
               location=loc,
@@ -364,7 +362,7 @@ plot.location(bstfa.output,
 
 ## Plotting/Visualization
 
-The BSTFA package contains multiple functions for plotting and visualizing the model output. Of course, all of these can be implemented on your own (the output from the `BSTFA` or `BSTFAfull` functions contain all posterior draws and basis function matrices), but these functions exist for quick plotting and visualization of posterior distributions. Some functions use base R for plotting while others use the `ggplot2` package. Table 1.2 below displays a table with each plotting function and a basic description. 
+The `BSTFA` package contains multiple functions for plotting and visualizing the model output. Of course, all of these can be implemented on your own (the output from the `BSTFA` or `BSTFAfull` functions contain all posterior draws and basis function matrices), but these functions exist for quick plotting and visualization of posterior distributions. Some functions use base R for plotting while others use the `ggplot2` package. Table 1.2 below displays a table with each plotting function and a basic description. 
 
 ### Table 1.2 {.unnumbered}
 
@@ -374,8 +372,8 @@ The BSTFA package contains multiple functions for plotting and visualizing the m
 |------|----------------------|
 | plot.location | Plot predicted response variable at a specific location (either observed or unobserved) for a specified time range. Credible or prediction interval bands for a given probability (default is 95%) can be included. Uses base R for plotting. |
 | plot.annual  | Plot the estimated annual seasonal behavior at a specific location (either observed or unobserved). Credible interval bands for a given probability (default is 95%) can be included. Uses base R for plotting. |
-| plot.grid    | Plot the estimated spatially-dependent mean, linear slope, or specific factor loading (the user specifies the parameter of interest) at all observed locations. Credible interval bounds for a given probability (default is 95%) can also be plotted. Uses ggplot2 for plotting. |
-| plot.map     | Plot the estimated spatially-dependent mean, linear slope, or specific factor loading (the user specifies the parameter of interest) at a grid of unobserved locations. Credible interval bounds for a given probability (default is 95%) can also be plotted. Contains arguments to import and plot the grid on a map using functions from the 'sf' package. Uses ggplot2 for plotting. |
+| plot.grid    | Plot the estimated spatialy-dependent linear slope or specific factor loading (the user specifies the parameter of interest) at all observed locations. Credible interval bounds for a given probability (default is 95%) can also be plotted. Uses `ggplot2` for plotting. |
+| plot.map     | Plot the estimated spatially-dependent linear slope or specific factor loading (the user specifies the parameter of interest) at a grid of unobserved locations. Credible interval bounds for a given probability (default is 95%) can also be plotted. Contains arguments to import and plot the grid on a map using functions from the `sf` package. Uses `ggplot2` for plotting. |
 | plot.factor  | Plot the estimated factors, either individually or all together. Credible interval bands for a given probability (default is 95%) can be included. Uses base R for plotting. |
 
 
@@ -389,7 +387,7 @@ plot.annual(bstfa.output,
 
 This illustrates the average seasonal behavior in a given year, where the black line is the average and the gray band is the 95\% credible interval for the average, and the gray dots are the observations plotted on their day of year. This shows the expected seasonal behavior - that the temperatures tend to increase in the spring/summer months and decrease in the fall/winter months.
 
-The `plot.grid` function can plot the estimated linear slope, long-term mean or factor loadings at all observed locations. The `type` argument (default is `"mean"`, with other options `"median"`, `"ub"`, or `"lb"`) indicates which summary to show. The `parameter` argument can be set either to `"slope"`, `"mean"` `"loading"`. If set to `"slope"`, the argument `yearscale` (default is `TRUE`) controls whether the slope estimates are "per year". If set to `"loading"`, the `loadings` argument indicates which loading to plot (demonstrated below). First, we can plot the linear slope:
+The `plot.grid` function can plot the estimated linear slope or factor loadings at all observed locations. The `type` argument (default is `"mean"`, with other options `"median"`, `"ub"`, or `"lb"`) indicates which summary to show. The `parameter` argument can be set either to `"slope"` or `"loading"`. If set to `"slope"`, the argument `yearscale` (default is `TRUE`) controls whether the slope estimates are "per year". If set to `"loading"`, the `loadings` argument indicates which loading to plot (demonstrated below). First, we can plot the estimated linear slope:
 
 ```{r}
 plot.grid(bstfa.output,
@@ -411,7 +409,7 @@ plot.grid(bstfa.output,
 
 This plot shows the weights that each location places on the first factor, with the color indicating the strength of the weight (darker colors indicate a stronger weight).
 
-The `plot.factor` function plots the estimated temporal factors either together (setting `together == TRUE`) or separate (setting `together == FALSE` and `factor` to whichever factor you want to plot). To match the plot above, we can plot factor 1:
+The `plot.factor` function plots the estimated temporal factors either together (setting `together=TRUE`) or separate (setting `together=FALSE` and `factor` to whichever factor you want to plot). We can plot factor 1 (to go with loading 1 above):
 
 ```{r}
 plot.factor(bstfa.output,
@@ -421,7 +419,7 @@ plot.factor(bstfa.output,
             type='mean')
 ```
 
-To plot the factors together, set `together==TRUE`:
+Or, to plot the factors together, set `together==TRUE`:
 
 ```{r}
 plot.factor(bstfa.output,
@@ -432,7 +430,7 @@ plot.factor(bstfa.output,
 
 This figure shows the estimated factors, or common behaviors of the temperature measurements across time that weren't explicitly modeled (in contrast to the linear increasing/decreasing and seasonal behaviors that were explicitly modeled). Notice that factor 1 is higher in the 1940s than the other factors, indicating that locations who load heavily on this first factor tend to have higher temperatures in the 1940s than the other locations.
 
-The `plot.map` is similar to `plot.grid`, but the parameter is plotted at a grid of unobserved values. If `map` is set to `FALSE`, the estimates will appear on a square grid. Setting, `map==TRUE`, `state==TRUE` and `location=='utah'` utilizes the `sf` package to import a map of Utah. The `fine` argument indicates the size of the grid; for instance, setting `fine=100` creates a $100 \times 100$ grid of estimates.  This function is demonstrated below for the estimated linear increase/decrease of temperatures across Utah (once again, setting `yearscale==TRUE` to provide "per year" estimates).
+The `plot.map` function is similar to `plot.grid`, but the parameter is plotted at a grid of unobserved values. If `map` is set to `FALSE`, the estimates will appear on a square grid. Setting, `map=TRUE`, `state=TRUE` and `location='utah'` utilizes the `sf` package to import a map of Utah. The `fine` argument indicates the size of the grid; for instance, setting `fine=100` creates a $100 \times 100$ grid of estimates.  This function is demonstrated below for the estimated linear increase/decrease of temperatures across Utah (once again, setting `yearscale=TRUE` to provide "per year" estimates).
 
 ```{r, cache=FALSE, warning=FALSE}
 plot.map(bstfa.output,
@@ -449,9 +447,9 @@ This figure shows the temperature tends to be increasing across the entire state
 
 ## Speed
 
-As mentioned before, the BSTFA package takes advantage of various mathematical and coding shortcuts to speed up computation. Specifically, we used sparse matrices, the vec operator, and basis functions to improve speed. The sparse matrices are implemented using the $\textit{Matrix}$ package. The basis functions reduce the number of parameters, thus reducing needed computation. In this section, we illustrate computational improvement over the "full" model for various number of bases.
+As mentioned before, the `BSTFA` package takes advantage of various mathematical and coding shortcuts to speed up computation. Specifically, the package uses sparse matrices, the vec operator, and basis functions to improve speed. The sparse matrices are implemented using the `Matrix` package. The basis functions reduce the number of parameters, thus reducing needed computation. In this section, we illustrate computational improvement over the "full" model for various numbers of bases.
 
-The model details are covered in greater detail in Section 2, so here we supply a short description as to why `BSTFA` is much faster than `BSTFAfull`. Each function models the factor analysis portion differently. In `BSTFAfull`, we model the factors using a vector autoregressive approach and the factor loadings with an exponential spatial dependence structure. This causes three main computational issues:
+The model details are covered in greater detail in Section 2, so here we supply a short description as to why `BSTFA` is much faster than `BSTFAfull`. Each function models the factor analysis portion differently. In `BSTFAfull`, we model the factors using a vector autoregressive approach and the factor loadings with an exponential spatial dependence structure (as in @berrett2020). This causes three main computational issues:
 
 - The autoregressive step requires looping through all time points, with each point requiring matrix inversion and multiplication. This process can be sped up by making use of C++ within R, but even that takes too long in a Bayesian sampler when $t$ gets remotely large (around 100 time points). 
 
@@ -465,9 +463,9 @@ The `BSTFA` function instead fits both the factors and the factor loadings using
 
 - Lowering the dimension of the previously-large matrices.
 
-- Introducing conjugacy. The entire model used in the BSTFA function is conditionally conjugate, allowing for an efficient Gibbs sampler without needing to use any metropolis steps.
+- Introducing conjugacy. The entire model used in the `BSTFA` function is conditionally conjugate, allowing for an efficient Gibbs sampler without needing to use any metropolis steps.
 
-For reference, Table 1.3 below compares the number of seconds per MCMC iteration for the `BSTFA` and `BSTFAfull` functions on simulated data with differing numbers of locations (first column) and number of bases (indicated by the different columns) for the factor loadings. In each instance, $T = 300$ and the number of temporal bases is $R_t = 60$.
+For reference, Table 1.3 below compares the number of seconds per MCMC iteration for the `BSTFA` and `BSTFAfull` functions on simulated data with differing numbers of locations (first column) and bases (indicated by the different columns) for the factor loadings. In each instance, $T = 300$ and the number of temporal bases is $R_t = 60$.
 
 ### Table 1.3 {.unnumbered}
 
@@ -485,11 +483,11 @@ For reference, Table 1.3 below compares the number of seconds per MCMC iteration
 
 $\textbf{Note:}$ The computations were carried out on a MacBook Pro (13-inch, 2022) with an Apple M2 chip (8-core CPU, 3.5 GHz) and 8 GB of RAM, running macOS 15.1.1.
 
-The plots below illustrate that there is a trade-off between computation speed and smoothness; that is, computation time is dramatically reduced at the cost of over-smoothing. The `BSTFAfull` returns fine-grain estimates with a high computational burden, while `BSTFA` provides a smooth representation of the process in a fraction of time. The first set of plots compares the grid of estimates for the third loading from both the `BSTFAfull` and `BSTFA` functions. The second set of plots compares the factor estimates. 
+The plots below illustrate that there is a trade-off between computation speed and smoothness; that is, computation time is dramatically reduced at the cost of over-smoothing. The `BSTFAfull` returns fine-grain estimates with a high computational burden, while `BSTFA` provides a smooth representation of the process in a fraction of the time. The first set of plots compares the grid of estimates for the third loading from both the `BSTFAfull` and `BSTFA` functions and differing amounts of spatial bases. The second set of plots compares the factor estimates from `BSTFAfull` and `BSTFA` using differing amounts of temporal bases. 
 
-![](loading_comparison.png){width=500px}
+![](loading_comparison2.png){width=800px}
 
-![](factor_comparison.png){width=500px}
+![](factor_comparison2.png){width=800px}
 
 The `BSTFA` package contains a function `computation.summary` that takes as an argument the object from `BSTFA` or `BSTFAfull` and prints a detailed summary of computation time.
 
@@ -499,7 +497,7 @@ computation.summary(bstfa.output)
 
 # Methodology
 
-This section details the methodology implemented in the `BSTFA` package. Specifically, the processes included in the model, basis function dimension reduction techniques, and residual spatio-temporal factor analysis are all discussed. For further details, the reader will be directed to appropriate references, including the original paper to implement the model contained in the `BSTFAfull` function.
+This section details the methodology implemented in the `BSTFA` package. Specifically, the processes included in the model, basis function dimension reduction techniques, and details about spatio-temporal factor analysis are all discussed. For further details, the reader will be directed to appropriate references, including the original paper to implement the model contained in the `BSTFAfull` function.
 
 ## Model
 
@@ -509,7 +507,7 @@ Y(\mathbf{s}, t) = (t - \bar{t})\beta(\mathbf{s}) + g(\mathbf{\xi}(\mathbf{s}), 
 $$
 where $t-\bar{t}$ represents the time $t$ centered by average time over the period of interest, $\beta(\mathbf{s})$ represents a spatially-dependent linear slope in time, $g(\mathbf{\xi}(\mathbf{s}), t)$ represents a spatially-dependent seasonal periodic process,  $\mathbf{f}'(t)\mathbf{\lambda}(\mathbf{s})$ is a spatio-temporal confirmatory factor analysis (CFA) process, and $\epsilon(\mathbf{s}, t)$ is a zero-mean independent Gaussian residual process with variance $\sigma^2$.
 
-The approach described in @berrett2020 is implemented in the `BSTFAfull` function. However, as discussed before, the `BSTFA` function makes adjustments to the residual factor analysis component $\mathbf{f}'(t)\mathbf{\lambda}(\mathbf{s})$ for increased computational speed. We provide a brief overview of the model for each interpretable process here, but for details, we refer the reader to @berrett2020.
+The approach described in @berrett2020 is implemented in the `BSTFAfull` function. However, as discussed before, the `BSTFA` function makes adjustments to the factor analysis component $\mathbf{f}'(t)\mathbf{\lambda}(\mathbf{s})$ for increased computational speed. We provide a brief overview of the model for each interpretable process here, but for details, we refer the reader to @berrett2020.
 
 ### Linear Component
 
@@ -538,9 +536,9 @@ where $\phi$ is the rate parameter of the Gamma distribution. Table 2.1 provides
 |-------|-----|-----------------------|
 | `linear`     | `TRUE`         | TRUE/FALSE value indicating whether the linear component is included in the model. |
 | `beta`       | `NULL`         | Vector of starting values for $\beta$ of length $n \times 1$; if none is supplied, realistic starting values are calculated. |
-| `alpha.prec` | `1e-5`       | Value on the diagonal of the precision matrix A. |
-| `tau2.gamma` | `2`           | Value of the shape parameter, $\gamma$, for the prior of the variance, $\tau^2$, associated with $\beta$. |
-| `tau2.phi`   | `1e-6`        | Value of the rate parameter, $\phi$, for the prior of the variance, $\tau^2$, associated with $\beta$. |
+| `alpha.prec` | `1e-5`       | Value on the diagonal of the precision matrix $A^{-1}$. |
+| `tau2.gamma` | `2`           | Value of the shape parameter, $\gamma$, for the prior of the variance, $\tau^2_\beta$. |
+| `tau2.phi`   | `1e-6`        | Value of the rate parameter, $\phi$, for the prior of the variance, $\tau^2_\beta$. |
 
 ### Seasonal Component
 
@@ -554,7 +552,7 @@ where $\mathbf{U}(t^*)$ is the $u \times 1$ vector of cubic circular b-splines e
 $$
 \mathbf{\xi}_j \sim N(\mathbf{B}_{\xi_j} \mathbf{\alpha}_{\xi_j}, \tau^2_{\xi_j} \mathbf{I}), 
 $$
-where $\mathbf{B}_{\xi_j}$ is an $n \times b_{\xi_j}$ matrix of basis functions, $\mathbf{\alpha}_{\xi_j}$ represents the corresponding $b_{\xi_j} \times 1$ vector of coefficients, $\tau^2_{\xi_j}$ represents the variances, and $\mathbf{I}$ the appropriate identity matrix. $\mathbf{\alpha}_{\xi_j}$ and $\tau^2_{\xi_j}$ are modeled with the same prior distributions (and same hyperparameters) as $\mathbf{\alpha}_\beta$ and $\tau^2_\beta$. Table 2.2 provides a list of the arguments to the `BSTFA` and `BSTFAfull` functions that are associated with the seasonal component.
+where $\mathbf{B}_{\xi_j}$ is an $n \times b_{\xi_j}$ matrix of basis functions, $\mathbf{\alpha}_{\xi_j}$ represents the corresponding $b_{\xi_j} \times 1$ vector of coefficients, $\tau^2_{\xi_j}$ represents the variances, and $\mathbf{I}$ the appropriate identity matrix. Each $\mathbf{\alpha}_{\xi_j}$ and $\tau^2_{\xi_j}$ are modeled with the same prior distributions (and same hyperparameters) as $\mathbf{\alpha}_\beta$ and $\tau^2_\beta$. Table 2.2 provides a list of the arguments to the `BSTFA` and `BSTFAfull` functions that are associated with the seasonal component.
 
 ### Table 2.2 {.unnumbered}
 
@@ -563,8 +561,8 @@ where $\mathbf{B}_{\xi_j}$ is an $n \times b_{\xi_j}$ matrix of basis functions,
 | Argument  | Default Value | Description |
 |-----------|--------------|--------------------------------------------------------------|
 | `seasonal`  | `TRUE`         | TRUE/FALSE value indicating whether the seasonal component is included in the model. |
-| `xi`       | `NULL`         | Vector of starting values for $ \xi $ of length $un \times 1$; if none is supplied, realistic starting values are calculated. |
-| `n.seasn.knots` | `7`        | Value representing the value of $ u $ (the number of circular B-spline knots). |
+| `xi`       | `NULL`         | Vector of starting values for $\xi$ of length $un \times 1$; if none is supplied, realistic starting values are calculated. |
+| `n.seasn.knots` | `7`        | Value representing the value of $u$ (the number of circular B-spline knots). |
 
 ### Factor Analysis Component
 
@@ -585,10 +583,28 @@ If $L$ represents the number of factors, we point out that $\mathbf{f}(t)$ is an
 | `n.factors`     | `min(4, ceiling(ncol(ymat)/20))`                                             | Number of factors to fit. If the number of locations is greater than 80, the function will always fit 4 factors unless otherwise specified in the `factors.fixed` argument. |
 | `plot.factors`  | `FALSE`                                            | TRUE/FALSE value indicating whether to provide a base R plot of the fixed factor locations. |
 
+### Residual Error
+
+The variance of the zero-mean independent Gaussian residual process, $\sigma^2$, is modeled with a conjugate prior similar to the other variance components,
+$$
+\frac{1}{\sigma^2} \sim Gamma(\gamma_\sigma, \phi_\sigma),
+$$
+where $\phi_\sigma$ is the rate parameter of the Gamma distribution. Table 2.4 provides a list of the arguments to the `BSTFA` and `BSTFAfull` functions that are associated with the linear component.
+
+### Table 2.4 {.unnumbered}
+
+<div align="center"><i>Table 2.4: Arguments to `BSTFA` and `BSTFAfull` associated with the Gaussian residual process.</i></div>
+
+| Argument    | Default Value | Description |
+|-------|-----|-----------------------|
+| `sig2` | `NULL`       | A starting value for $\sigma^2$; if none is supplied, the starting value will be the variance of the non-missing values of ymat. |
+| `sig2.gamma`     | `2`         | Value of the shape parameter, $\gamma_\sigma$, for the prior of the overall residual variance, $\sigma^2$. |
+| `sig2.phi`       | `1e-5`         | Value of the rate parameter, $\phi_\sigma$, for the prior of the overall residual variance, $\sigma^2$. |
+
 
 ## Basis Functions
 
-Basis functions act as a projection of a process onto a set of linear combinations of lower-dimension functions [@Cressie2022]. We make use of basis functions to allow for smooth estimates for each process across space and to drastically increase computational speed. For spatial modeling, the BSTFA package has three basis function forms built in: Fourier bases, bisquare bases, and thin-plate spline bases. For temporal modeling, only Fourier bases are implemented. Because the Fourier basis function is the default for the BSTFA package, that is the only methodology discussed in detail here; for the others, we refer the reader to @cressie2008bisquare for bisquare bases and @nychka2000spatial for thin-plate splines.
+Basis functions act as a projection of a process onto a set of linear combinations of lower-dimension functions [@Cressie2022]. We make use of basis functions to allow for smooth estimates for each process across space and to drastically increase computational speed. For spatial modeling, the `BSTFA` package has three basis function forms built in: Fourier bases, bisquare bases, and thin-plate spline bases. For temporal modeling, only Fourier bases are implemented. Because the Fourier basis function is the default for the `BSTFA` package, that is the only methodology discussed in detail here; for the others, we refer the reader to @cressie2008bisquare for bisquare bases and @nychka2000spatial for thin-plate spline bases.
 
 We use Fourier bases because of their connection to Gaussian processes and their computational flexibility. A Gaussian process can be approximated quite well with orthogonal spectral basis functions [@wikle2002spatial]. One example is to use some number of principal components of the spatial covariance matrix. These spectral basis functions can themselves be represented as a sum of sine and cosine functions [@paciorek2007fourier] reminiscent of a trigonometric Fourier series. Fourier bases, then, can capture the frequencies exhibited in the principal components of the underlying Gaussian process, granting a smooth approximation of the process.
 
@@ -608,7 +624,7 @@ $$
 $$
 where $\mathbf{s}_{[1]}$ represents the first coordinate of $\mathbf{s}$ (e.g., longitude), and $\mathbf{s}_{[2]}$ the second coordinate (e.g., latitude),  and $f_{\mathbf{s}_{[1]}}$ and $f_{\mathbf{s}_{[2]}}$ are the corresponding frequencies of the Fourier functions.
 
-The `BSTFA` package contains a helper function to visualize Fourier bases over a given set of coordinates. This can be useful when trying to decide frequencies ($\textit{freq.lon}$ and $\textit{freq.lat}$) and number of bases ($R$) to fit in your model. This function is demonstrated below using the Utah temperature data.
+The `BSTFA` package contains a helper function to visualize spatial Fourier bases over a given set of coordinates. This can be useful when trying to decide frequencies (`freq.lon` and `freq.lat`) and number of bases (`R_s`) to fit in your model. This function is demonstrated below using the Utah temperature data.
 
 ```{r}
 plot.fourier.bases(utahDataList$Coords,
@@ -627,18 +643,18 @@ where $\mathbf{QT}$ is a $T \times (R_t+1)$ matrix of temporal bases, $\mathbf{Q
 
 Both sets of coefficients are modeled \emph{a priori} in the same way as $\mathbf{\alpha}_\beta$ and $\mathbf{\alpha}_{\xi_j}$,
 $$
-    \mathbf{\alpha}_F \sim N(\mathbf{0}, \mathbf{A}), \\
-    \mathbf{\alpha}_\Lambda \sim N(\mathbf{0}, \mathbf{A}),
+    \mathbf{\alpha}_F \sim N(\mathbf{0}, \mathbf{A}^{-1}), \\
+    \mathbf{\alpha}_\Lambda \sim N(\mathbf{0}, \mathbf{A}^{-1}),
 $$ 
 and the variance component for the loadings $\tau_{\Lambda}^2$ the same as $\tau_{\beta}^2$ and $\tau_{\xi_j}^2$,
 $$
 \frac{1}{\tau_{\Lambda}^2} \sim Gamma(\gamma, \phi).
 $$
-Once again, these hyperparameters take the same argument values as used in the linear and seasonal components. Table 2.3 provides a list of the arguments to the `BSTFA` and `BSTFAfull` functions that are associated with basis functions
+Once again, the hyperparameters for the variance take the same argument values as used in the linear and seasonal components. Table 2.3 provides a list of the arguments to the `BSTFA` and `BSTFAfull` functions that are associated with basis functions.
 
-### Table 2.4 {.unnumbered}
+### Table 2.5 {.unnumbered}
 
-<div align="center"><i>Table 2.4: Arguments to `BSTFA` and `BSTFAfull` associated with basis functions for all components of the model.</i></div>
+<div align="center"><i>Table 2.5: Arguments to `BSTFA` and `BSTFAfull` associated with basis functions for all components of the model.</i></div>
 
 | Argument          | Default Value                                      | Description |
 |------|----------|--------------------------------------|
@@ -728,17 +744,15 @@ plot.map(bstfa.output,
 
 Here we see that locations in the North/Northeast have behavior similar to that of the fourth factor (Logan, Utah). 
 
-## Choosing Basis Functions
+## Basis Function Details
 
 The choice of basis functions is assigned using the `spatial.style` and `load.style` arguments. The `spatial.style` argument controls which basis functions to use for the linear and seasonal components ($\mathbf{B_\beta}$ and each $\mathbf{B}_{\xi_j}$) while the `load.style` argument controls the basis functions for the factor loadings ($\mathbf{QS}$). The number of bases for the linear and seasonal components is specified with the argument `n.spatial.bases` while the loadings use the argument `n.load.bases`. The values given to `spatial.style` and `load.style` need not be the same, nor do `n.spatial.bases` and `n.load.bases`. The default value for both is `'fourier'`. The only basis functions used for the factors themselves are Fourier bases.
 
 ### Fourier
 
-When using Fourier bases, the user needs to specify number of bases and the spatial frequency in both the longitude and latitude directions. As demonstrated in Section 2.2, the function `plot.fourier.bases` can help the user visualize Fourier bases and choose the appropriate amount of bases and frequencies. After exploratory analysis, it seems that assigning `freq.lon` and `freq.lat` values of 40 and 30 respectively and setting `n.spatial.bases` and `n.load.bases` equal to 8 and 6 works well for the Utah dataset.
+When using Fourier bases, the user needs to specify number of bases and the spatial frequency in both the longitude and latitude directions. As demonstrated in Section 2.2, the function `plot.fourier.bases` can help the user visualize Fourier bases and choose the appropriate amount of bases and frequencies. After exploratory analysis methods (demonstrated in Section 3.2.4), it seems that assigning `freq.lon` and `freq.lat` values of 40 and 30 respectively and setting `n.spatial.bases` and `n.load.bases` equal to 8 and 6 works well for the Utah dataset.
 
-FIX ME - what exploratory analysis?
-
-The user should also consider the frequency (`freq.temp`) and number of bases (`n.temp.bases`) for the temporal factors, which always use Fourier bases. The default values tend to work well (see Table 2.4), but increasing the number of bases can create a finer estimate at the cost of reduced computational speed.
+The user should also consider the frequency (`freq.temp`) and number of bases (`n.temp.bases`) for the temporal factors, which always use Fourier bases. The default values tend to work well (see Table 2.5), but increasing the number of bases can create a finer estimate at the cost of reduced computational speed.
 
 $\textbf{Note:}$ The values for `n.spatial.bases`, `n.load.bases` and `n.temp.bases` need to be even numbers. If they are not, the function will add 1 to the supplied value.
 
@@ -758,7 +772,7 @@ BSTFA(ymat=utahDataList$TemperatureVals,
 
 ### Bisquare
 
-As described in Table 2.4, multiple arguments to `BSTFA` and `BSTFAfull` are used only for bisquare bases. The argument given to `spatial.style` or `load.style` to use these basis functions is `'grid'`. The `knot.levels` argument indicates how many resolutions of knots to create, where the $r^{th}$ resolution uses $2^{2r}$ bases distributed evenly in a square grid across the coordinates of the data. Setting `plot.knots=TRUE` outputs a plot of knots in all resolutions.
+As described in Table 2.5, multiple arguments to `BSTFA` and `BSTFAfull` are used only for bisquare bases. The argument given to `spatial.style` or `load.style` to use these basis functions is `'grid'`. The `knot.levels` argument indicates how many resolutions of knots to create, where the $r^{th}$ resolution uses $2^{2r}$ bases distributed evenly in a square grid across the coordinates of the data. Setting `plot.knots=TRUE` outputs a plot of knots in all resolutions.
 
 ```{r plotting knots}
 bstfa.plot_knots = BSTFA(ymat=utahDataList$TemperatureVals,
@@ -804,7 +818,7 @@ bstfa.custom_knots = BSTFA(ymat=utahDataList$TemperatureVals,
 
 ### Thin-plate splines
 
-The argument given to `spatial.style` and `load.style` to use these basis functions is `'tps'`. The function `basis.tps` from the $\textit{npreg}$ package is used to create the thin-plate spline bases. The knots used to create the bases are on a square grid; thus, the number of bases is equal to `floor(sqrt(n.spatial.bases))^2` and `floor(sqrt(n.load.bases))^2`. Thus, even if the values 8 and 10 are given to `n.spatial.bases` and `n.load.bases` as shown in the code below, the number of bases will be 4 and 9.
+The argument given to `spatial.style` and `load.style` to use these basis functions is `'tps'`. The function `basis.tps` from the `npreg` package is used to create the thin-plate spline bases. The knots used to create the bases are on a square grid; thus, the number of bases is equal to `floor(sqrt(n.spatial.bases))^2` and `floor(sqrt(n.load.bases))^2`. Thus, even if the values 8 and 10 are given to `n.spatial.bases` and `n.load.bases` as shown in the code below, the number of bases will be 4 and 9.
 
 ```{r, eval=FALSE}
 BSTFA(ymat=utahDataList$TemperatureVals,
@@ -816,10 +830,49 @@ BSTFA(ymat=utahDataList$TemperatureVals,
       n.load.bases=10)
 ```
 
+### Choosing Basis Function
+
+There are few ways to decide which spatial basis functions to use for your data. First, diagnostics such as WAIC and LOO can help the user compare model fits. These can be computed using the `waic` and `loo` functions from the `loo` package. These functions require a matrix of log-likelihood values; that can be generated using the function `computeLogLik` from the `BSTFA` package, supplying as argument the output from `BSTFA` or `BSTFAfull`.
+
+```{r, eval=FALSE}
+loglik = computeLogLik(bstfa.output,
+                       verbose=FALSE)
+loo::waic(loglik)
+loo::loo(loglik)
+```
+
+Table 3.1 compares the WAIC and LOO for 12 different model fits on the Utah data. In each instance, the # of spatial bases is the same for both the linear/seasonal components and the factor analysis component - that is, `n.spatial.bases == n.load.bases`. The # of temporal bases is the `n.temp.bases` argument; 126 is the default for the Utah data (10\% of the number of times in the data). 
+
+### Table 3.1 {.unnumbered}
+
+<div align="center"><i>Table 3.1: Summary of model performance with different basis functions.</i></div>
+
+|   Type   | # of spatial bases | # of temporal bases |  LOO  |  WAIC  |
+|:--------:|:------------------:|:------------------:|:-----:|:-----:|
+| Fourier  |         8           |         126          |  202.7     |  195.8     |
+| Fourier  |         16          |         126          |  203.2     |  195.4     |
+| Bisquare |         4 (1-level) |         126           |  203.4     |  195.4     |
+| Bisquare |         20 (2-levels)|        126           |  203.6     |  195.3     |
+| TPS      |         9           |         126           |  202.6     |  195.7     |
+| TPS      |         16          |         126           |  203.2     |  195.6     |
+| Fourier  |         8           |         200           |  204.6     |  191.6     |
+| Fourier  |         16          |         200           |  205.7     |  191.4     |
+| Bisquare |         4 (1-level) |         200           |  204.7     |  191.6     |
+| Bisquare |         20 (2-levels)|        200           |  203.9     |  191.9     |
+| TPS      |         9           |         200           |  205.2     |  191.7     |
+| TPS      |         16          |         200           |  204.8     |  191.8     |
+
+Notice that in this case, the choice of spatial basis function does not matter much, while increasing the number of temporal bases from 126 to 200 leads to a reduction in WAIC, indicating better model fit. However, increasing the number of temporal bases reduces computational efficiency (in this instance, moving from 126 to 200 temporal bases added about 0.2 seconds to each iteration). 
+
+It's also important to visually assess estimates using the different basis functions and other settings. For instance, this can be done by fitting a model with each basis function and estimating the linear slope using `plot.map`, as demonstrated in Section 1.3. The figure below shows 3 estimates of the linear slope when the model is fit with Fourier bases, bisquare bases, and thin plate spline bases.
+
+![](basis_comparison.png){width=800px}
+
+For this Utah dataset, the knots used in the bisquare bases are obvious, and the thin-plate spline creates an image that doesn't align with our beliefs of temperature rise over time. The Fourier bases create a believable picture.
 
 ## Assessing MCMC Convergence
 
-The BSTFA package has built in helper functions for assessing convergence. They use the fact that all matrices of parameter draws are MCMC objects from the package $\textit{coda}$. To look at trace plots, you can use the `plot.trace` function, which takes as input your `BSTFA` or `BSTFAfull` object, a string value `parameter` indicating which parameter to view (corresponds directly to what the parameter is called in the `BSTFA` list output), and `param.range` which indicates which of these paramters you want to view.
+The `BSTFA` package has built in helper functions for assessing convergence. They use the fact that all matrices of parameter draws are MCMC objects from the `coda` package. To look at trace plots, you can use the `plot.trace` function, which takes as input your `BSTFA` or `BSTFAfull` object, a string value `parameter` indicating which parameter to view (corresponds directly to what the parameter is called in the `BSTFA` list output), and `param.range` which indicates which of these paramters you want to view.
 
 ```{r}
 plot.trace(bstfa.output,

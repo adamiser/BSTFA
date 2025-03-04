@@ -588,11 +588,11 @@ plot.map = function(out, parameter='slope', yearscale=TRUE, new_x=NULL,
       coord_fixed(1.3,
                   xlim = c(min(out$coords[,1])-1, max(out$coords[,1])+1),
                   ylim = c(min(out$coords[,2])-1, max(out$coords[,2])+1)) +
-      ggtitle("Slope") + # FIX ME #
+      ggtitle("Slope") +
       theme(panel.background =element_rect(fill = 'blue')) +
       geom_point(data=predloc.inside, aes(x=Lon, y=Lat, color=predm)) +
       scale_colour_gradientn(colours=color.gradient, name=legend.name,
-                             limits = c(min_value, max_value)) +  # FIX ME #
+                             limits = c(min_value, max_value)) +
       xlab('Longitude') +
       ylab('Latitude')
     print(m)
@@ -667,7 +667,7 @@ plot.factor = function(out, factor=1, together=FALSE, include.legend=TRUE,
     plot(y=F.tilde[xlims,1], x=out$dates[xlims], type='l', main = ('All Factors'),
          xlab = 'Time', ylab='Value', col=1,
          ylim=range(F.tilde))
-         # ylim=c(-3,5))
+         # ylim=c(-7,7)) # FIX ME
     for (i in 2:out$n.factors) {
       lines(y=F.tilde[,i], x=out$dates, type='l', col=i)
     }

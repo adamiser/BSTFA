@@ -10,6 +10,7 @@
   loadings = 1,
   type = "mean",
   ci.level = c(0.025, 0.975),
+  yearscale = TRUE,
   color.gradient = colorRampPalette(rev(RColorBrewer::brewer.pal(9, name = "RdBu")))(50)
 )
 }

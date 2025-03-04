@@ -86,6 +86,27 @@ check.convergence = function(out, type='eSS', cutoff=ifelse(type=='eSS',100,0.00
 
 }
 
+#' Compute log-likelihood
+#' @param out output from BSTFA or BSTFAfull
+#' @export computeLogLik
+computeLogLik <- function(out, verbose=FALSE) {
+  y = out$y
+  mu = predictBSTFA(out=out,
+                    type='all')
+  log_lik = matrix(0,nrow=out$n.times*out$n.locs,
+                          ncol=out$draws)
+  if (verbose) print('Starting Log-likelihood calculation')
+  for (d in 1:out$draws) {
+    for (i in 1:(out$n.times*out$n.locs)) {
+      log_lik[i,d] = dnorm(y[i],mu[i,d],sd=out$sig2[j],log=TRUE)
+    }
+    if (verbose) print(paste('Draw', d))
+  }
+  log_lik
+}
+
+
+
 
 # compute.DIC <- function(out){
 #   #in-sample DIC only (this function removes ALL data treated as missing)
