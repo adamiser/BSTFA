@@ -17,6 +17,7 @@ Suggests:
 VignetteBuilder: knitr
 Depends: 
     R (>= 2.10)
+LinkingTo: Rcpp, RcppArmadillo
 LazyData: true
 Imports: 
     Matrix
