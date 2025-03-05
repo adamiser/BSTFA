@@ -1,10 +1,9 @@
 ---
 title: "BSTFA"
 output:
-  bookdown::html_document2:
+  bookdown::pdf_document2:
     toc: yes
     number_sections: yes
-    toc-title: "Table of Contents"
 css: style.css
 cache: true
 cache.path: "/Users/adamiser/Desktop/BSTFA/vignettes"
@@ -240,6 +239,7 @@ $\textbf{Note:}$ The `utahDataList` list object in the `BSTFA` package contains 
 
 ```{r BSTFA Function, echo=FALSE, include=FALSE, cache=FALSE}
 # This code runs the function correctly but isn't shown in the vignette
+set.seed(23416)
 bstfa.output = BSTFA(ymat=utahDataList$TemperatureVals,
                      dates=utahDataList$Dates,
                      coords=utahDataList$Coords,
@@ -333,7 +333,7 @@ The `predictBSTFA` function is also called within the `plot.location` function, 
 
 Plotting predictions at an observed location:
 
-```{r, fig.width=4, fig.height=2}
+```{r}
 loc = 1 # Alpine, Utah in our dataset
 plot.location(bstfa.output,
               location=loc,
@@ -443,7 +443,7 @@ plot.map(bstfa.output,
          fine=100)
 ```
 
-This figure shows the temperature tends to be increasing across the entire state, more so in the northeast and southwest corners.
+This figure shows the temperature tends to be increasing across the entire state, more so in the northeast, northwest and southwest corners.
 
 ## Speed
 
@@ -485,9 +485,9 @@ $\textbf{Note:}$ The computations were carried out on a MacBook Pro (13-inch, 20
 
 The plots below illustrate that there is a trade-off between computation speed and smoothness; that is, computation time is dramatically reduced at the cost of over-smoothing. The `BSTFAfull` returns fine-grain estimates with a high computational burden, while `BSTFA` provides a smooth representation of the process in a fraction of the time. The first set of plots compares the grid of estimates for the third loading from both the `BSTFAfull` and `BSTFA` functions and differing amounts of spatial bases. The second set of plots compares the factor estimates from `BSTFAfull` and `BSTFA` using differing amounts of temporal bases. 
 
-![](loading_comparison2.png){width=800px}
+![](loading_comparison2.png){width=600px}
 
-![](factor_comparison2.png){width=800px}
+![](factor_comparison2.png){width=600px}
 
 The `BSTFA` package contains a function `computation.summary` that takes as an argument the object from `BSTFA` or `BSTFAfull` and prints a detailed summary of computation time.
 
@@ -575,7 +575,7 @@ If $L$ represents the number of factors, we point out that $\mathbf{f}(t)$ is an
 <div align="center"><i>Table 2.3: Arguments to `BSTFA` and `BSTFAfull` associated with the factor analysis component.</i></div>
 
 | Argument         | Default Value    | Description |
-|-----------|------------------|---------------------------------------------|
+|-----------|----------------------|---------------------------------------------|
 | `factors`       | `TRUE`                                             | TRUE/FALSE value indicating whether the factor analysis component is included in the model. |
 | `Fmat`          | `NULL`                                             | Matrix of starting values for $F$ of dimension $T \times L$; if none is supplied, realistic starting values are calculated. |
 | `Lambda`        | `NULL`                                             | Matrix of starting values for $\Lambda$ of dimension $n \times L$; if none is supplied, realistic starting values are calculated. |
@@ -657,25 +657,25 @@ Once again, the hyperparameters for the variance take the same argument values a
 <div align="center"><i>Table 2.5: Arguments to `BSTFA` and `BSTFAfull` associated with basis functions for all components of the model.</i></div>
 
 | Argument          | Default Value                                      | Description |
-|------|----------|--------------------------------------|
-| `spatial.style`   | `"Fourier"`                                        | Indicates which type of basis functions to use for the linear and seasonal components. The default is `"Fourier"`. Other values accepted are `"bisquare"` and `"tps"`. |
-| `n.spatial.bases` | `8`                                                | Number of basis functions to use for the linear and seasonal components. For Fourier bases, this value is $R_s$. For bisquare bases, this value is ignored. For thin-plate spline bases, $\text{floor}(\sqrt{n.spatial.bases})^2$ is calculated to create an even grid. |
-| `load.style`      | `"Fourier"`                                        | Indicates which type of basis functions to use for the factor loading component. The default is `"Fourier"`. Other values accepted are `"bisquare"` and `"tps"`. |
-| `n.load.bases`    | `6`                                                | Number of basis functions to use for the factor loading component. For Fourier bases, this value is $R_s$. For bisquare bases, this value is ignored. For thin-plate spline bases, `floor(sqrt(n.spatial.bases))^2` is calculated to create an even grid. |
-| `freq.lon`        | `diff(range(coords[,1]))^2`                        | Frequency of the Fourier function for longitude (or, if using other coordinate system, the first coordinate value). This value is $f_s[1]$. Default value is the range of the longitude coordinates squared. If not using Fourier bases, this argument is not used. |
-| `freq.lat`        | `diff(range(coords[,2]))^2`                        | Frequency of the Fourier function for latitude (or, if using other coordinate system, the second coordinate value). This value is $f_s[2]$. Default value is the range of the latitude coordinates squared. If not using Fourier bases, this argument is not used. |
+|-------------|----------------------|--------------------------------------|
+| `spatial.style`   | `"fourier"`                                        | Indicates which type of basis functions to use for the linear and seasonal components. The default is `"fourier"`. Other values accepted are `"grid"` and `"tps"`. |
+| `n.spatial.bases` | `8`                                                | Number of basis functions to use for the linear and seasonal components. For Fourier bases, this value is $R_s$. For bisquare bases, this value is ignored. For thin-plate spline bases, the number of bases is `floor(sqrt(n.spatial.bases))^2` to create an even grid. |
+| `load.style`      | `"fourier"`                                        | Indicates which type of basis functions to use for the factor loading component. The default is `"fourier"`. Other values accepted are `"grid"` and `"tps"`. |
+| `n.load.bases`    | `6`                                                | Number of basis functions to use for the factor loading component. For Fourier bases, this value is $R_s$. For bisquare bases, this value is ignored. For thin-plate spline bases, the number of bases is `floor(sqrt(n.spatial.bases))^2` to create an even grid. |
+| `freq.lon`        | `diff(range(coords[,1]))^2`                        | Frequency of the Fourier function for longitude (or, if using other coordinate system, the first coordinate value). This value is $f_{s_{[1]}}$. Default value is the range of the longitude coordinates squared. If not using Fourier bases, this argument is not used. |
+| `freq.lat`        | `diff(range(coords[,2]))^2`                        | Frequency of the Fourier function for latitude (or, if using other coordinate system, the second coordinate value). This value is $f_{s_{[2]}}$. Default value is the range of the latitude coordinates squared. If not using Fourier bases, this argument is not used. |
 | `n.temp.bases`    | `floor(nrow(ymat)/10)`                              | Number of Fourier basis functions for the temporal factor component. This value is $R_t$. The default value is `floor(T/10)`. |
 | `freq.temp`       | `nrow(ymat)`                                       | Frequency of the Fourier function for the temporal factor component. This value is $f_t$. Default value is $T$. |
 | `knot.levels`     | `2`                                                | The number of knot resolutions when using the bisquare basis function method. If not using the bisquare method, this argument is not used. |
-| `max.knot.dist`   | `mean(dist(coords))`                               | The distance beyond which a location is considered 'too far' from a knot, meaning its basis function associated with that knot evaluates to zero. If not using the bisquare method, this argument is not used. |
-| `premade.knots`   | `NULL`                                             | A list of coordinates containing pre-specified knots. The number of elements in the list represents the number of resolutions. Each element of the list should have the same dimension as `coords`. If not using the bisquare method, this argument is not used. |
+| `max.knot.dist`   | `mean(dist(coords))`                               | The distance beyond which a location is considered 'too far' from a knot, meaning its basis function value associated with that knot evaluates to zero. If not using the bisquare method, this argument is not used. |
+| `premade.knots`   | `NULL`                                             | A list of coordinates containing pre-specified knots. Each element of the list is a resolution. Each resolution should have the same number of columns as `coords`. If not using the bisquare method, this argument is not used. |
 | `plot.knots`      | `FALSE`                                            | TRUE/FALSE value indicating whether to provide a base R plot of the knot resolutions overlaid on top of the given `coords`. If not using the bisquare method, this argument is not used. |
 
 # Useful Features
 
 ## Fixing factors
 
-Factor analysis can lend itself to interpretability of the factors and/or loadings. Since loadings are spatially dependent, it makes sense to use a geographic interpretation. Thus, to model the Utah temperature data, we choose locations to fix that will lend factor interpretation to West (Wendover), East (Moab), South (St. George), and North (Logan) factors, shown in Figure 3.1. In this instance, with $L = 4$ factors chosen, the $L$-rank matrix of constants is the $L \times L$ identity matrix. This is the matrix for fixed factors used in the `BSTFA` and `BSTFAfull` functions. 
+Factor analysis allows for interpretability of the factors and/or loadings. Since loadings are spatially dependent, it makes sense to use a geographic interpretation. Thus, to model the Utah temperature data, we choose locations to fix that will lend factor interpretation to West (Wendover), East (Moab), South (St. George), and North (Logan) factors, shown in Figure 3.1. In this instance, with $L = 4$ factors chosen, the $L$-rank matrix of constants is the $L \times L$ identity matrix. This is the matrix for fixed factors used in the `BSTFA` and `BSTFAfull` functions. 
 
 It's important that the fixed factor locations have a low proportion of missing data. Once again, if fixed factor locations are not given, they will be smartly chosen by the function according to distance and proportion of missing data.
 
@@ -718,7 +718,7 @@ m
 <div align="center"><i>Figure 3.1: Plot of Utah showing locations of fixed factors (in red) and all locations (in black).</i></div>
 
 
-Using these fixed factors and $L \times L$ identity matrix, the estimate for the fourth loading at a location indicates the strength of the relationship of the behavior to the behavior at Logan, Utah, after accounting for linear and seasonal processes. A higher estimate of the loading suggests greater similarity.
+Using these fixed factors and $L \times L$ identity matrix, the estimate for the fourth loading at a location indicates the strength of the relationship of its behavior to the behavior at Logan, Utah, after accounting for linear and seasonal processes. A higher estimate of the loading suggests greater similarity.
 
 To plot the fourth factor and its loading:
 
@@ -746,15 +746,13 @@ Here we see that locations in the North/Northeast have behavior similar to that 
 
 ## Basis Function Details
 
-The choice of basis functions is assigned using the `spatial.style` and `load.style` arguments. The `spatial.style` argument controls which basis functions to use for the linear and seasonal components ($\mathbf{B_\beta}$ and each $\mathbf{B}_{\xi_j}$) while the `load.style` argument controls the basis functions for the factor loadings ($\mathbf{QS}$). The number of bases for the linear and seasonal components is specified with the argument `n.spatial.bases` while the loadings use the argument `n.load.bases`. The values given to `spatial.style` and `load.style` need not be the same, nor do `n.spatial.bases` and `n.load.bases`. The default value for both is `'fourier'`. The only basis functions used for the factors themselves are Fourier bases.
+The choice of basis functions is assigned using the `spatial.style` and `load.style` arguments. The `spatial.style` argument controls which basis functions to use for the linear and seasonal components ($\mathbf{B_\beta}$ and each $\mathbf{B}_{\xi_j}$) while the `load.style` argument controls the basis functions for the factor loadings ($\mathbf{QS}$). The number of bases for the linear and seasonal components is specified with the argument `n.spatial.bases` while the loadings use the argument `n.load.bases`. The values given to `spatial.style` and `load.style` need not be the same, nor do `n.spatial.bases` and `n.load.bases`. The default value for both is `'fourier'`. The only basis functions used for the temporal factors themselves are Fourier bases.
 
 ### Fourier
 
 When using Fourier bases, the user needs to specify number of bases and the spatial frequency in both the longitude and latitude directions. As demonstrated in Section 2.2, the function `plot.fourier.bases` can help the user visualize Fourier bases and choose the appropriate amount of bases and frequencies. After exploratory analysis methods (demonstrated in Section 3.2.4), it seems that assigning `freq.lon` and `freq.lat` values of 40 and 30 respectively and setting `n.spatial.bases` and `n.load.bases` equal to 8 and 6 works well for the Utah dataset.
 
-The user should also consider the frequency (`freq.temp`) and number of bases (`n.temp.bases`) for the temporal factors, which always use Fourier bases. The default values tend to work well (see Table 2.5), but increasing the number of bases can create a finer estimate at the cost of reduced computational speed.
-
-$\textbf{Note:}$ The values for `n.spatial.bases`, `n.load.bases` and `n.temp.bases` need to be even numbers. If they are not, the function will add 1 to the supplied value.
+The user should also consider the frequency (`freq.temp`) and number of bases (`n.temp.bases`) for the temporal factors, which always use Fourier bases. The default values (see Table 2.5) tend to work well, but increasing the number of bases can create a finer estimate at the cost of reduced computational speed.
 
 ```{r, eval=FALSE}
 BSTFA(ymat=utahDataList$TemperatureVals,
@@ -786,7 +784,7 @@ bstfa.plot_knots = BSTFA(ymat=utahDataList$TemperatureVals,
                          iters=10)
 ```
 
-The user can specify custom knot locations with the `premade.knots` argument. This argument takes a list of coordinates containing pre-specified knots. The number of elements in the list represents the number of resolutions. Each element of the list should have the same dimension as `coords`. Below is an example where the first resolution matches the default, but the second uses a $3 \times 3$ grid of knots rather than the default $4 \times 4$.
+The user can specify custom knot locations with the `premade.knots` argument. This argument takes a list of coordinates containing pre-specified knots. The number of elements in the list represents the number of resolutions. Each element of the list should have the same number of columns as `coords`. Below is an example where the first resolution matches the default, but the second uses a $3 \times 3$ grid of knots rather than the default $4 \times 4$.
 
 ```{r custom.knots}
 knots=list()
@@ -818,7 +816,7 @@ bstfa.custom_knots = BSTFA(ymat=utahDataList$TemperatureVals,
 
 ### Thin-plate splines
 
-The argument given to `spatial.style` and `load.style` to use these basis functions is `'tps'`. The function `basis.tps` from the `npreg` package is used to create the thin-plate spline bases. The knots used to create the bases are on a square grid; thus, the number of bases is equal to `floor(sqrt(n.spatial.bases))^2` and `floor(sqrt(n.load.bases))^2`. Thus, even if the values 8 and 10 are given to `n.spatial.bases` and `n.load.bases` as shown in the code below, the number of bases will be 4 and 9.
+The argument given to `spatial.style` and `load.style` to use these basis functions is `'tps'`. The function `basis.tps` from the `npreg` package is used to create the thin-plate spline bases. The knots used to create the bases are on a square grid; thus, the number of bases is equal to `floor(sqrt(n.spatial.bases))^2` and `floor(sqrt(n.load.bases))^2`. So, even if the values 8 and 10 are given to `n.spatial.bases` and `n.load.bases` as shown in the code below, the number of bases used in the model will be 4 and 9.
 
 ```{r, eval=FALSE}
 BSTFA(ymat=utahDataList$TemperatureVals,
@@ -830,9 +828,9 @@ BSTFA(ymat=utahDataList$TemperatureVals,
       n.load.bases=10)
 ```
 
-### Choosing Basis Function
+### Choosing Basis Functions
 
-There are few ways to decide which spatial basis functions to use for your data. First, diagnostics such as WAIC and LOO can help the user compare model fits. These can be computed using the `waic` and `loo` functions from the `loo` package. These functions require a matrix of log-likelihood values; that can be generated using the function `computeLogLik` from the `BSTFA` package, supplying as argument the output from `BSTFA` or `BSTFAfull`.
+There are few ways to decide which spatial basis functions to use for your data. First, diagnostics such as WAIC and LOO can help the user compare model fits. These can be computed using the `waic` and `loo` functions from the `loo` package. These functions require a matrix of log-likelihood values, which can be generated using the function `computeLogLik` from the `BSTFA` package, supplying as argument the output from `BSTFA` or `BSTFAfull`.
 
 ```{r, eval=FALSE}
 loglik = computeLogLik(bstfa.output,
@@ -841,7 +839,7 @@ loo::waic(loglik)
 loo::loo(loglik)
 ```
 
-Table 3.1 compares the WAIC and LOO for 12 different model fits on the Utah data. In each instance, the # of spatial bases is the same for both the linear/seasonal components and the factor analysis component - that is, `n.spatial.bases == n.load.bases`. The # of temporal bases is the `n.temp.bases` argument; 126 is the default for the Utah data (10\% of the number of times in the data). 
+Table 3.1 compares the WAIC and LOO for 12 different model fits on the Utah data. In each instance, the # of spatial bases is the same for both the linear/seasonal components and the factor analysis component - that is, `n.spatial.bases = n.load.bases`. The # of temporal bases is the `n.temp.bases` argument; 126 is the default for the Utah data (10\% of $T$). 
 
 ### Table 3.1 {.unnumbered}
 
@@ -864,23 +862,24 @@ Table 3.1 compares the WAIC and LOO for 12 different model fits on the Utah data
 
 Notice that in this case, the choice of spatial basis function does not matter much, while increasing the number of temporal bases from 126 to 200 leads to a reduction in WAIC, indicating better model fit. However, increasing the number of temporal bases reduces computational efficiency (in this instance, moving from 126 to 200 temporal bases added about 0.2 seconds to each iteration). 
 
-It's also important to visually assess estimates using the different basis functions and other settings. For instance, this can be done by fitting a model with each basis function and estimating the linear slope using `plot.map`, as demonstrated in Section 1.3. The figure below shows 3 estimates of the linear slope when the model is fit with Fourier bases, bisquare bases, and thin plate spline bases.
+In addition to model diagnostics, it's also important to visually assess estimates using the different basis functions and other settings. For instance, this can be done by fitting a model with each basis function and estimating the linear slope using `plot.map`, as demonstrated in Section 1.3. The figure below shows 3 estimates of the linear slope when the model is fit with Fourier bases, bisquare bases, and thin plate spline bases.
 
-![](basis_comparison.png){width=800px}
+![](basis_comparison.png){width=600px}
 
-For this Utah dataset, the knots used in the bisquare bases are obvious, and the thin-plate spline creates an image that doesn't align with our beliefs of temperature rise over time. The Fourier bases create a believable picture.
+For this Utah data set, the knot grid used in the bisquare bases is visible, making these basis functions an undesirable choice. Also, the thin-plate splines create an image that doesn't align with our beliefs of temperature rise over time. The Fourier bases create a picture that is more believable.
 
 ## Assessing MCMC Convergence
 
-The `BSTFA` package has built in helper functions for assessing convergence. They use the fact that all matrices of parameter draws are MCMC objects from the `coda` package. To look at trace plots, you can use the `plot.trace` function, which takes as input your `BSTFA` or `BSTFAfull` object, a string value `parameter` indicating which parameter to view (corresponds directly to what the parameter is called in the `BSTFA` list output), and `param.range` which indicates which of these paramters you want to view.
+The `BSTFA` package has built-in helper functions for assessing convergence. They use the fact that all matrices of parameter draws are MCMC objects from the `coda` package. To look at trace plots, you can use the `plot.trace` function. This function takes as input your `BSTFA` or `BSTFAfull` object, a string value `parameter` indicating which parameter to view (corresponds directly to what the parameter is called in the `BSTFA` list output), and `param.range` which indicates which of these parameters you want to view.
 
-```{r}
+```{r, fig.height=3, fig.width=3}
 plot.trace(bstfa.output,
            parameter='beta',
-           param.range=c(2,27))
+           param.range=c(2,27),
+           density=FALSE)
 ```
 
-The other available helper function is `check.convergence`. This function takes as input the `BSTFA` or `BSTFAfull` function output and returns the effective sample size or Geweke diagnostic (indicated by `type=eSS` or `type=geweke`) for all parameters above a given cutoff (indicated by `cutoff`). For instance, the function below will return all parameters with an effective sample size below 100.
+The other available helper function is `check.convergence`. This function takes as input the `BSTFA` or `BSTFAfull` function output and returns the effective sample size or Geweke diagnostic (indicated by `type='eSS'` or `type='geweke'`) for all parameters above a given cutoff (indicated by `cutoff`). For instance, the function below will return all parameters with an effective sample size below 100.
 
 ```{r, eval=FALSE}
 check.convergence(bstfa.output,
@@ -890,9 +889,13 @@ check.convergence(bstfa.output,
 
 # Appendices
 
-## Additional Notes
+## Computation Notes
 
-$\textbf{Note:}$ to help with convergence of the residual factor analysis component, the sampler waits to sample $\mathbf{F}$ and $\mathbf{\Lambda}$ until $\textit{min(floor(burn/2), 500)}$. 
+Below are specific notes about computation not explicitly mentioned in the vignette:
+
+- The values for `n.spatial.bases`, `n.load.bases` and `n.temp.bases` need to be even numbers. If they are not, the function will add 1 to the supplied value.
+
+- To help with convergence of the residual factor analysis component, the sampler waits to sample $\mathbf{F}$ and $\mathbf{\Lambda}$ until $\textit{min(floor(burn/2), 500)}$. That is why, for example, the `computation.summary` function divides computation time into "Pre-Factor Analysis" and "Post-Factor Analysis".
 
 ## References
 

@@ -332,6 +332,7 @@ plot.grid = function(out, parameter, loadings=1, type='mean', ci.level=c(0.025, 
 #' @importFrom sf st_point
 #' @importFrom ggpubr ggarrange
 #' @importFrom RColorBrewer brewer.pal
+#' @import sf
 #' @export plot.map
 plot.map = function(out, parameter='slope', yearscale=TRUE, new_x=NULL,
                     type='mean', ci.level=c(0.025, 0.975), fine=100,

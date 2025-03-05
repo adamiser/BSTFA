@@ -8,6 +8,7 @@
 #' @importFrom coda effectiveSize
 #' @importFrom MASS mvrnorm
 #' @importFrom npreg basis.tps
+#' @import matrixcalc
 #' @import Matrix
 #' @import npreg
 #' @export BSTFA

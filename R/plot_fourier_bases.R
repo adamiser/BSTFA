@@ -3,6 +3,7 @@
 #' Visualize fourier bases
 #' @param out output from STFA or STFAfull
 #' @importFrom scatterplot3d scatterplot3d
+#' @import scatterplot3d
 #' @export plot.fourier.bases
 plot.fourier.bases = function(coords, R, fine=100, plot.3d=FALSE,
                               freq.lon=diff(range(coords[,1]))^2,

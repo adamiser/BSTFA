@@ -4,7 +4,7 @@
 \alias{plot.trace}
 \title{Plot trace plots}
 \usage{
-\method{plot}{trace}(out, parameter, param.range = NULL, par.mfrow = c(1, 1))
+\method{plot}{trace}(out, parameter, param.range = NULL, par.mfrow = c(1, 1), density = TRUE)
 }
 \arguments{
 \item{out}{output from STFA or STFAfull}

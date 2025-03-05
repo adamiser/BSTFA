@@ -4,15 +4,22 @@
 #' @param out output from STFA or STFAfull
 #' @export plot.trace
 plot.trace = function(out, parameter, param.range=NULL,
-                      par.mfrow=c(1,1)) {
+                      par.mfrow=c(1,1), density=TRUE) {
 
   vals = out[[parameter]]
 
   if (is.null(param.range)) ind=1:dim(vals)[2]
   else ind=param.range
 
-  for (i in ind) {
-    plot(vals[,i], type='l', main = paste(parameter, i))
+  if (density==TRUE) {
+    for (i in ind) {
+      plot(vals[,i], type='l', main = paste(parameter, i))
+    }
+  } else {
+    for (i in ind) {
+      plot(vals[,i], type='l', main = paste(parameter, i),
+           density=FALSE)
+    }
   }
 }
 
