@@ -628,23 +628,6 @@ BSTFA(ymat=utahDataList$TemperatureVals,
       freq.temp=nrow(utahDataList$TemperatureVals))
 ```
 
-```{r, eval=FALSE}
-bstfa.output = BSTFA(ymat=utahDataList$TemperatureVals,
-                     dates=utahDataList$Dates,
-                     coords=utahDataList$Coords,
-                     iters=10000,
-                     burn=1000,
-                     thin=2,
-                     spatial.style='fourier',
-                     load.style='fourier',
-                     n.spatial.bases=8,
-                     n.load.bases=6,
-                     freq.lon=40,
-                     freq.lat=30,
-                     n.temp.bases=floor(nrow(utahDataList$TemperatureVals)/10),
-                     freq.temp=nrow(utahDataList$TemperatureVals))
-```
-
 ### Bisquare
 
 As described in Table 2.5, multiple arguments to `BSTFA` and `BSTFAfull` are used only for bisquare bases. The argument given to `spatial.style` or `load.style` to use these basis functions is `'grid'`. The `knot.levels` argument indicates how many resolutions of knots to create, where the $r^{th}$ resolution uses $2^{2r}$ bases distributed evenly in a square grid across the coordinates of the data. Setting `plot.knots=TRUE` outputs a plot of knots in all resolutions.
