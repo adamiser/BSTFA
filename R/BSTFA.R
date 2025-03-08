@@ -289,6 +289,7 @@ BSTFA <- function(ymat, dates, coords,
       }
       if (spatial.style=='grid') {
         QS = newS[,1:n.load.bases]
+        knots.vec.save.load = newS.output[[2]]
       }
       else {
         newS.output = makeNewS(coords=coords,n.locations=n.locs,knot.levels=knot.levels,

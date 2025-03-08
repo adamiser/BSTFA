@@ -389,6 +389,7 @@ plot.map = function(out, parameter='slope', yearscale=TRUE, new_x=NULL,
   # }
 
   if (parameter=='loading') {
+    plot.title = paste('Loading', loading)
     if (out$load.style=='grid') {
       predS <- NULL
       for(kk in 1:length(out$knots.load)) {
@@ -427,6 +428,7 @@ plot.map = function(out, parameter='slope', yearscale=TRUE, new_x=NULL,
   }
   else {
     if (out$spatial.style=='grid') {
+      plot.title = 'Slope'
       predS <- NULL
       for(kk in 1:length(out$knots.spatial)) {
         bspred <- bisquare2d(as.matrix(predloc), as.matrix(out$knots.spatial[[kk]]))
@@ -589,11 +591,12 @@ plot.map = function(out, parameter='slope', yearscale=TRUE, new_x=NULL,
       coord_fixed(1.3,
                   xlim = c(min(out$coords[,1])-1, max(out$coords[,1])+1),
                   ylim = c(min(out$coords[,2])-1, max(out$coords[,2])+1)) +
-      ggtitle("Slope") +
+      ggtitle(plot.title) + # FIX ME
       theme(panel.background =element_rect(fill = 'blue')) +
       geom_point(data=predloc.inside, aes(x=Lon, y=Lat, color=predm)) +
       scale_colour_gradientn(colours=color.gradient, name=legend.name,
                              limits = c(min_value, max_value)) +
+                             # limits = c(-0.7, 0.7)) + # FIX ME
       xlab('Longitude') +
       ylab('Latitude')
     print(m)
