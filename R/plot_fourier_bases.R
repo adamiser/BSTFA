@@ -35,10 +35,11 @@ plot.fourier.bases = function(coords, R, fine=100, plot.3d=FALSE,
   ints = c(seq(1,R,by=2),seq(2,R,by=2))
   if (plot.3d==TRUE) {
     for (i in 1:ncol(S)) {
+      m = ifelse(i>(ncol(S)/2),"", paste("r=",ints[i],sep=""))
       tt = ifelse(i > 0.5*ncol(S), "Cosine", "Sine")
       scatterplot3d::scatterplot3d(predgrid[,1], predgrid[,2], S[,i],
                     #main=paste("Basis", tt, ints[i]),
-                    main=paste("r =", ints[i]),
+                    main=m,
                     xlab="", ylab="", zlab="",
                     cex.main=1.5)
       # mtext("Latitude",

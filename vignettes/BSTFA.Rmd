@@ -245,8 +245,8 @@ The `BSTFA` package contains multiple functions for plotting and visualizing the
 |------|----------------------|
 | plot.location | Plot predicted response variable at a specific location (either observed or unobserved) for a specified time range. Credible or prediction interval bands for a given probability (default is 95%) can be included. Uses base R for plotting. |
 | plot.annual  | Plot the estimated annual seasonal behavior at a specific location (either observed or unobserved). Credible interval bands for a given probability (default is 95%) can be included. Uses base R for plotting. |
-| plot.grid    | Plot the estimated spatially-dependent linear slope or specific factor loading (the user specifies the parameter of interest) at all observed locations. Credible interval bounds for a given probability (default is 95%) can also be plotted. Uses `ggplot2` for plotting. |
-| plot.map     | Plot the estimated spatially-dependent linear slope or specific factor loading (the user specifies the parameter of interest) at a grid of unobserved locations. Credible interval bounds for a given probability (default is 95%) can also be plotted. Contains arguments to import and plot the grid on a map using functions from the `sf` package. Uses `ggplot2` for plotting. |
+| plot.grid    | Plot the estimated spatially dependent linear slope or specific factor loading (the user specifies the parameter of interest) at all observed locations. Credible interval bounds for a given probability (default is 95%) can also be plotted. Uses `ggplot2` for plotting. |
+| plot.map     | Plot the estimated spatially dependent linear slope or specific factor loading (the user specifies the parameter of interest) at a grid of unobserved locations. Credible interval bounds for a given probability (default is 95%) can also be plotted. Contains arguments to import and plot the grid on a map using functions from the `sf` package. Uses `ggplot2` for plotting. |
 | plot.factor  | Plot the estimated factors, either individually or all together. Credible interval bands for a given probability (default is 95%) can be included. Uses base R for plotting. |
 
 
@@ -279,7 +279,7 @@ plot.grid(bstfa.output,
 ```
 
 
-The `plot.factor` function plots the estimated temporally-dependent factors either together (setting `together=TRUE`) or separate (setting `together=FALSE` and `factor` to whichever factor you want to plot). The example code below plots the first factor, corresponding to the loadings shown in the previous example. The resulting plot shows the posterior mean of the first factor across the observed time period. Notice how this first factor in the 1920's & 30's tends to have lower values (values < 0), but from the 1940's-90's, the factor values are at or above 0. Locations whose loadings are close to 1 will have temperature series that follow a similar pattern.
+The `plot.factor` function plots the estimated temporally dependent factors either together (setting `together=TRUE`) or separate (setting `together=FALSE` and `factor` to whichever factor you want to plot). The example code below plots the first factor, corresponding to the loadings shown in the previous example. The resulting plot shows the posterior mean of the first factor across the observed time period. Notice how this first factor in the 1920's & 30's tends to have lower values (values < 0), but from the 1940's-90's, the factor values are at or above 0. Locations whose loadings are close to 1 will have temperature series that follow a similar pattern.
 
 ```{r}
 plot.factor(bstfa.output,
@@ -370,7 +370,7 @@ The `BSTFA` package implements a Bayesian spatio-temporal factor analysis regres
 $$
 Y(\mathbf{s}, t) = (t - \bar{t})\beta(\mathbf{s}) + g(\mathbf{\xi}(\mathbf{s}), t) + \mathbf{f}'(t)\mathbf{\lambda}(\mathbf{s}) + \epsilon(\mathbf{s}, t)
 $$
-where $t-\bar{t}$ represents the time $t$ centered by average time over the period of interest, $\beta(\mathbf{s})$ represents a spatially-dependent linear slope in time, $g(\mathbf{\xi}(\mathbf{s}), t)$ represents a spatially-dependent seasonal periodic process,  $\mathbf{f}'(t)\mathbf{\lambda}(\mathbf{s})$ is a spatio-temporal confirmatory factor analysis (CFA) process, and $\epsilon(\mathbf{s}, t)$ is a zero-mean independent Gaussian residual process with variance $\sigma^2$.
+where $t-\bar{t}$ represents the time $t$ centered by average time over the period of interest, $\beta(\mathbf{s})$ represents a spatially dependent linear slope in time, $g(\mathbf{\xi}(\mathbf{s}), t)$ represents a spatially dependent seasonal periodic process,  $\mathbf{f}'(t)\mathbf{\lambda}(\mathbf{s})$ is a spatio-temporal confirmatory factor analysis (CFA) process, and $\epsilon(\mathbf{s}, t)$ is a zero-mean independent Gaussian residual process with variance $\sigma^2$.
 
 The approach described in @berrett2020 is implemented in the `BSTFAfull` function. However, as discussed before, the `BSTFA` function makes adjustments to the factor analysis component $\mathbf{f}'(t)\mathbf{\lambda}(\mathbf{s})$ for increased computational speed. We provide a brief overview of the model for each interpretable process here, but for details, we refer the reader to @berrett2020.
 
@@ -405,7 +405,7 @@ where $\phi$ is the rate parameter of the Gamma distribution. Table 2.1 provides
 
 ### Seasonal Component
 
-Similarly, the spatially-dependent seasonal periodic process also uses basis functions.  First, we use cubic circular b-splines [@wood2017generalized] in time on the day of the year to model the periodic seasonal component. Let 
+Similarly, the spatially dependent seasonal periodic process also uses basis functions.  First, we use cubic circular b-splines [@wood2017generalized] in time on the day of the year to model the periodic seasonal component. Let 
 
 $$
 g(\boldsymbol{\xi}(\mathbf{s}), t) = \mathbf{U}(t^*) \boldsymbol{\xi}(\mathbf{s}),
@@ -461,7 +461,7 @@ where $\phi_\sigma$ is the rate parameter of the Gamma distribution. Table 2.4 p
 
 ## Basis Functions
 
-Basis functions act as a projection of a process onto a set of linear combinations of lower-dimension functions [@Cressie2022]. We make use of basis functions to allow for smooth estimates for each process across space and to drastically increase computational speed. For spatial modeling, the `BSTFA` package has three basis function forms built in: Fourier bases, bisquare bases, and thin-plate spline bases. For temporal modeling, only Fourier bases are implemented. Because the Fourier basis function is the default for the `BSTFA` package, that is the only methodology discussed in detail here; for the others, we refer the reader to @cressie2008bisquare for bisquare bases and @nychka2000spatial for thin-plate spline bases.
+Basis functions are a projection of a process onto a set of linear combinations of lower-dimension functions [@Cressie2022]. We make use of basis functions to allow for smooth estimates for each process across space and to drastically increase computational speed. For spatial modeling, the `BSTFA` package has three basis function forms built in: Fourier bases, bisquare bases, and thin-plate spline bases. For temporal modeling, only Fourier bases are implemented. Because the Fourier basis function is the default for the `BSTFA` package, that is the only methodology discussed in detail here; for the others, we refer the reader to @cressie2008bisquare for bisquare bases and @nychka2000spatial for thin-plate spline bases.
 
 We use Fourier bases because of their connection to Gaussian processes and their computational flexibility. A Gaussian process can be approximated quite well with orthogonal spectral basis functions [@wikle2002spatial]. One example is to use some number of principal components of the spatial covariance matrix. These spectral basis functions can themselves be represented as a sum of sine and cosine functions [@paciorek2007fourier] reminiscent of a trigonometric Fourier series. Fourier bases, then, can capture the frequencies exhibited in the principal components of the underlying Gaussian process, granting a smooth approximation of the process.
 
